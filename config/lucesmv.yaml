@@ -1,0 +1,73 @@
+# Evaluation Pipeline Configuration for LuCES-MV Dataset
+# =======================================================
+# Parameters matching the original lucesmv evaluation codebase.
+
+dataset:
+  name: "lucesmv"
+  objects:
+    - "Bowl"
+    - "Buddha"
+    - "Bunny"
+    - "Cup"
+    - "Die"
+    - "Hippo"
+    - "House"
+    - "Owl"
+    - "Queen"
+    - "Squirrel"
+
+  normals_priors:
+    - "sdmunips"
+    - "unimsps"
+
+  methods: []
+  num_views: 15
+
+paths:
+  data_root: "/projects/m25115/eval_3d_datasets/lucesmv/data/{object}/{normals_priors}"
+  eval_root: "/projects/m25115/eval_3d_datasets/lucesmv/eval/{object}"
+
+cleanup:
+  dilation_radius: 12
+  use_masks: true
+
+evaluation:
+  downsample_density: 0.07
+  max_dist: 5.0
+  fscore_thresholds: [0.5, 1.0, 1.5, 2.0, 3.0, 5.0]
+
+visualization:
+  auto_generate: false
+  default_metrics:
+    - uniform
+    - accuracy
+    - completeness
+  scale: 1.0
+  crop: true
+  crop_margin: 15
+  colormaps:
+    accuracy: jet
+    completeness: jet
+  max_dist: 3.0
+  exclude_mode: none
+
+execution:
+  mode: "slurm"
+  local:
+    max_workers: 4
+  slurm:
+    account: "m25115"
+    partition: "mesonet"
+    cleanup:
+      cpus: 4
+      mem_gb: 32
+      time: "00:30:00"
+    eval:
+      cpus: 8
+      mem_gb: 100
+      time: "01:00:00"
+
+    viz:
+      cpus: 4
+      mem_gb: 32
+      time: "01:00:00"

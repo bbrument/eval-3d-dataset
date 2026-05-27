@@ -1,0 +1,51 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+
+# Virtual environment
+venv/
+.venv/
+
+# IDE / tools
+.vscode/
+.idea/
+.claude/
+*.swp
+*.swo
+
+# SLURM logs
+slurm_logs/
+*.out
+*.err
+
+# Data artifacts (not code)
+*.npy
+*.npz
+*.ply
+*.obj
+*.stl
+
+# Images
+*.png
+*.jpg
+*.jpeg
+
+# Archives
+*.zip
+*.tar.gz
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Project-specific files (not part of the codebase)
+projection_comparison.png
+slurm_fix_visibility.sh
+slurm_preprocess_lucesmv.sh
+docs/
+
+# Watcher state files
+config/.*_state.json

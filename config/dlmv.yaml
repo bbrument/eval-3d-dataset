@@ -1,0 +1,118 @@
+# Evaluation Pipeline Configuration for DiLiGenT-MV Dataset
+# =========================================================
+# Auto-watcher compatible configuration
+
+# Dataset configuration
+dataset:
+  name: "dlmv"
+  objects:
+    - "bearPNG"
+    - "buddhaPNG"
+    - "cowPNG"
+    - "pot2PNG"
+    - "readingPNG"
+
+  # Normal priors methods used for reconstruction
+  normals_priors:
+    - "sdmunips"
+    - "unimsps"
+
+  # Reconstruction methods - leave empty for auto-detection by watcher
+  # Or specify explicitly:
+  # methods:
+  #   - "rnbv2-sn/sdmunips/nbv-20/nbit-30000/norm2"
+  methods: []
+
+  num_views: 20  # DiLiGenT-MV has 20 views
+
+# Path configuration
+paths:
+  # Data root contains cameras.npz, masks, normals
+  # Template: {object} and {normals_priors} will be replaced
+  data_root: "/projects/m25115/eval_3d_datasets/dlmv/data/{object}/{normals_priors}"
+
+  # Eval root contains Groundtruth/ and all method results
+  # Template: {object} will be replaced
+  eval_root: "/projects/m25115/eval_3d_datasets/dlmv/eval/{object}"
+
+# Mesh cleanup configuration
+cleanup:
+  dilation_radius: 5
+  z_threshold: 5
+
+# Evaluation configuration
+evaluation:
+  downsample_density: 0.05  # Point sampling density (mm)
+  max_dist: 2.0             # Maximum distance for outlier filtering (mm)
+  fscore_thresholds:
+    - 0.5
+    - 0.6
+    - 0.7
+    - 0.8
+    - 0.9
+    - 1.0
+    - 1.1
+    - 1.2
+    - 1.3
+    - 1.4
+    - 1.5
+
+# Execution configuration - SLURM mode for watcher
+execution:
+  mode: "slurm"
+
+  # Local execution settings (for testing)
+  local:
+    max_workers: 4
+
+  # SLURM execution settings
+  slurm:
+    account: "m25115"
+    partition: "mesonet"
+
+    # Cleanup stage resources
+    cleanup:
+      cpus: 4
+      mem_gb: 32
+      time: "00:30:00"
+
+    # Evaluation stage resources
+    eval:
+      cpus: 8
+      mem_gb: 100
+      time: "01:00:00"
+
+    # Visualization stage resources
+    viz:
+      cpus: 4
+      mem_gb: 32
+      time: "01:00:00"
+
+# Visualization configuration
+visualization:
+  auto_generate: false
+  default_metrics:
+    - uniform
+    - accuracy
+    - completeness
+  scale: 1.0
+  crop: true
+  crop_margin: 15
+  colormaps:
+    accuracy: jet
+    completeness: jet
+  max_dist: 3.0
+  exclude_mode: none
+
+# Aggregation configuration
+aggregation:
+  visibility_groups:
+    low: [1, 5]
+    medium: [6, 15]
+    high: [16, 20]
+  curvature_thresholds: null
+
+# Watcher configuration (used by 'watch' command)
+watcher:
+  scan_interval_minutes: 15
+  log_file: "/projects/m25115/eval_3d_datasets/dlmv/eval_watcher.log"

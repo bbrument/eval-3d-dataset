@@ -1,0 +1,190 @@
+"""Tests for core/metrics.py - distance and F-score computation."""
+
+import numpy as np
+import pytest
+
+from src.core.metrics import (
+    compute_distances,
+    compute_chamfer,
+    compute_fscore_curve,
+    compute_metrics,
+)
+
+
+class TestComputeDistances:
+    """Tests for compute_distances function."""
+
+    def test_identical_clouds(self):
+        """Distance should be zero for identical point clouds."""
+        pcd = np.array([[0, 0, 0], [1, 0, 0], [0, 1, 0]], dtype=np.float32)
+        distances, indices = compute_distances(pcd, pcd)
+
+        assert distances.shape == (3,)
+        assert indices.shape == (3,)
+        np.testing.assert_array_almost_equal(distances, [0, 0, 0])
+
+    def test_known_distance(self):
+        """Test with known distances."""
+        pcd_a = np.array([[0, 0, 0]], dtype=np.float32)
+        pcd_b = np.array([[1, 0, 0], [0, 2, 0]], dtype=np.float32)
+
+        distances, indices = compute_distances(pcd_a, pcd_b)
+
+        assert distances.shape == (1,)
+        np.testing.assert_almost_equal(distances[0], 1.0)
+        assert indices[0] == 0  # Nearest is first point at (1,0,0)
+
+    def test_multiple_points(self):
+        """Test bidirectional distance computation."""
+        pcd_a = np.array([[0, 0, 0], [2, 0, 0]], dtype=np.float32)
+        pcd_b = np.array([[1, 0, 0]], dtype=np.float32)
+
+        dist_a2b, idx_a2b = compute_distances(pcd_a, pcd_b)
+        dist_b2a, idx_b2a = compute_distances(pcd_b, pcd_a)
+
+        np.testing.assert_array_almost_equal(dist_a2b, [1.0, 1.0])
+        np.testing.assert_array_almost_equal(dist_b2a, [1.0])
+
+
+class TestComputeChamfer:
+    """Tests for compute_chamfer function."""
+
+    def test_zero_chamfer(self):
+        """Chamfer distance should be zero for identical clouds."""
+        dist_a2b = np.array([0, 0, 0], dtype=np.float32)
+        dist_b2a = np.array([0, 0, 0], dtype=np.float32)
+
+        result = compute_chamfer(dist_a2b, dist_b2a)
+
+        assert result["chamfer"] == 0.0
+        assert result["chamfer_a2b"] == 0.0
+        assert result["chamfer_b2a"] == 0.0
+
+    def test_known_chamfer(self):
+        """Test Chamfer computation with known values."""
+        dist_a2b = np.array([1, 2, 3], dtype=np.float32)  # mean = 2
+        dist_b2a = np.array([2, 4], dtype=np.float32)  # mean = 3
+
+        result = compute_chamfer(dist_a2b, dist_b2a)
+
+        assert result["chamfer_a2b"] == pytest.approx(2.0)
+        assert result["chamfer_b2a"] == pytest.approx(3.0)
+        assert result["chamfer"] == pytest.approx(2.5)
+
+    def test_max_dist_filtering(self):
+        """Test outlier filtering with max_dist."""
+        dist_a2b = np.array([1, 2, 100], dtype=np.float32)  # 100 is outlier
+        dist_b2a = np.array([1, 1, 1], dtype=np.float32)
+
+        result = compute_chamfer(dist_a2b, dist_b2a, max_dist=10.0)
+
+        assert result["chamfer_a2b"] == pytest.approx(1.5)  # mean of [1, 2]
+        assert result["n_filtered_a2b"] == 1
+        assert result["n_filtered_b2a"] == 0
+
+    def test_empty_after_filtering(self):
+        """Handle empty arrays after filtering."""
+        dist_a2b = np.array([100, 200], dtype=np.float32)
+        dist_b2a = np.array([1], dtype=np.float32)
+
+        result = compute_chamfer(dist_a2b, dist_b2a, max_dist=10.0)
+
+        assert result["chamfer_a2b"] == 0.0
+        assert result["n_filtered_a2b"] == 2
+
+
+class TestComputeFscoreCurve:
+    """Tests for compute_fscore_curve function."""
+
+    def test_perfect_score(self):
+        """F-score should be 1.0 when all points are within threshold."""
+        dist_a2b = np.array([0.1, 0.2, 0.3], dtype=np.float32)
+        dist_b2a = np.array([0.1, 0.2], dtype=np.float32)
+
+        result = compute_fscore_curve(dist_a2b, dist_b2a, thresholds=[1.0])
+
+        assert result["precision"][0] == pytest.approx(1.0)
+        assert result["recall"][0] == pytest.approx(1.0)
+        assert result["fscore"][0] == pytest.approx(1.0)
+
+    def test_zero_score(self):
+        """F-score should be 0 when no points are within threshold."""
+        dist_a2b = np.array([10, 20, 30], dtype=np.float32)
+        dist_b2a = np.array([10, 20], dtype=np.float32)
+
+        result = compute_fscore_curve(dist_a2b, dist_b2a, thresholds=[1.0])
+
+        assert result["precision"][0] == 0.0
+        assert result["recall"][0] == 0.0
+        assert result["fscore"][0] == 0.0
+
+    def test_multiple_thresholds(self):
+        """Test F-score curve with multiple thresholds."""
+        # dist_a2b: distances from data (a) to GT (b) -> precision
+        # dist_b2a: distances from GT (b) to data (a) -> recall
+        dist_a2b = np.array([0.5, 1.5, 2.5], dtype=np.float32)
+        dist_b2a = np.array([0.5, 1.0, 1.5, 2.0], dtype=np.float32)
+
+        result = compute_fscore_curve(dist_a2b, dist_b2a, thresholds=[1.0, 2.0, 3.0])
+
+        # F3 Fix: Clarify that comparison is strict (<), so value == threshold is NOT counted
+        # At t=1.0:
+        #   precision = (dist_a2b < 1.0).sum() / 3 = 1/3 (only 0.5 < 1.0; 1.5, 2.5 excluded)
+        #   recall = (dist_b2a < 1.0).sum() / 4 = 1/4 (only 0.5 < 1.0; 1.0 itself is NOT < 1.0)
+        assert result["precision"][0] == pytest.approx(1 / 3)
+        assert result["recall"][0] == pytest.approx(1 / 4)
+
+        # At t=2.0:
+        #   precision = (dist_a2b < 2.0).sum() / 3 = 2/3 (0.5, 1.5 < 2.0)
+        #   recall = (dist_b2a < 2.0).sum() / 4 = 3/4 (0.5, 1.0, 1.5 < 2.0)
+        assert result["precision"][1] == pytest.approx(2 / 3)
+        assert result["recall"][1] == pytest.approx(3 / 4)
+
+        # At t=3.0: all within threshold
+        assert result["precision"][2] == pytest.approx(1.0)
+        assert result["recall"][2] == pytest.approx(1.0)
+
+
+class TestComputeMetrics:
+    """Integration tests for compute_metrics."""
+
+    def test_combines_chamfer_and_fscore(self):
+        """compute_metrics should return both Chamfer and F-score results."""
+        dist_data2gt = np.array([0.5, 1.0, 1.5], dtype=np.float32)
+        dist_gt2data = np.array([0.5, 0.5], dtype=np.float32)
+
+        result = compute_metrics(dist_data2gt, dist_gt2data, thresholds=[1.0, 2.0])
+
+        # Check Chamfer fields exist
+        assert "chamfer" in result
+        assert "chamfer_a2b" in result
+        assert "chamfer_b2a" in result
+
+        # Check F-score fields exist
+        assert "thresholds" in result
+        assert "precision" in result
+        assert "recall" in result
+        assert "fscore" in result
+
+        # Check values
+        assert result["chamfer_a2b"] == pytest.approx(1.0)
+        assert result["chamfer_b2a"] == pytest.approx(0.5)
+
+    # F5 Fix: Verify numpy arrays are converted to lists
+    def test_returns_lists_not_numpy_arrays(self):
+        """compute_metrics should convert numpy arrays to lists for JSON serialization."""
+        dist_data2gt = np.array([0.5, 1.0], dtype=np.float32)
+        dist_gt2data = np.array([0.5], dtype=np.float32)
+
+        result = compute_metrics(dist_data2gt, dist_gt2data, thresholds=[1.0, 2.0])
+
+        # These fields should be lists, not numpy arrays
+        assert isinstance(result["thresholds"], list)
+        assert isinstance(result["precision"], list)
+        assert isinstance(result["recall"], list)
+        assert isinstance(result["fscore"], list)
+
+        # Chamfer values should be floats, not numpy scalars
+        assert isinstance(result["chamfer"], float)
+        assert isinstance(result["chamfer_a2b"], float)
+        assert isinstance(result["chamfer_b2a"], float)

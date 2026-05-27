@@ -1,0 +1,60 @@
+# Evaluation Pipeline Configuration for DTU Dataset
+# ===================================================
+# Parameters matching the original DTU evaluation codebase.
+# Note: DTU uses its own GT point clouds + observability masks.
+# The original eval uses a different protocol (STL reference + obs masks)
+# but this config provides equivalent cleanup + generic eval parameters.
+
+dataset:
+  name: "dtu"
+  objects:
+    - "scan24"
+    - "scan37"
+    - "scan40"
+    - "scan55"
+    - "scan63"
+    - "scan65"
+    - "scan69"
+    - "scan83"
+    - "scan97"
+    - "scan105"
+    - "scan106"
+    - "scan110"
+    - "scan114"
+    - "scan118"
+    - "scan122"
+  methods: []
+  num_views: 64
+
+paths:
+  data_root: "/path/to/dtu/data/{object}"
+  eval_root: "/path/to/dtu/eval/{object}"
+
+cleanup:
+  dilation_radius: 12
+  use_masks: true
+
+evaluation:
+  downsample_density: 0.2
+  max_dist: 20.0
+  fscore_thresholds: [1.0, 2.0, 5.0, 10.0, 20.0]
+
+visualization:
+  auto_generate: false
+  default_metrics:
+    - uniform
+    - accuracy
+    - completeness
+  scale: 1.0
+  crop: true
+  crop_margin: 15
+  colormaps:
+    accuracy: jet
+    completeness: jet
+  max_dist: 10.0
+  exclude_mode: none
+
+execution:
+  mode: "local"
+  local:
+    max_workers: 4
