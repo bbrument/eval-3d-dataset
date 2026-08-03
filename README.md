@@ -261,4 +261,4 @@ the only component requiring an unpublished internal library.
 
 ## Licence
 
-See `LICENSE`.
+MIT — see [`LICENSE`](LICENSE). Copyright (c) 2026 Baptiste Brument.
