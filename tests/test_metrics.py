@@ -1,5 +1,7 @@
 """Tests for core/metrics.py - distance and F-score computation."""
 
+import math
+
 import numpy as np
 import pytest
 
@@ -83,14 +85,65 @@ class TestComputeChamfer:
         assert result["n_filtered_b2a"] == 0
 
     def test_empty_after_filtering(self):
-        """Handle empty arrays after filtering."""
+        """An empty filtered set must yield NaN, never 0.0.
+
+        Regression test: 0.0 is the *best possible* score for a lower-is-better
+        metric, so a reconstruction so misaligned that no point survives max_dist
+        used to be recorded as perfect.
+        """
         dist_a2b = np.array([100, 200], dtype=np.float32)
         dist_b2a = np.array([1], dtype=np.float32)
 
         result = compute_chamfer(dist_a2b, dist_b2a, max_dist=10.0)
 
-        assert result["chamfer_a2b"] == 0.0
+        assert math.isnan(result["chamfer_a2b"])
+        assert math.isnan(result["chamfer"]), "NaN must propagate to the combined chamfer"
         assert result["n_filtered_a2b"] == 2
+        assert result["coverage_a2b"] == 0.0
+        assert result["coverage"] == 0.0
+
+    def test_coverage_reports_contributing_fraction(self):
+        """coverage exposes the continuous bias, not just its extreme case."""
+        dist_a2b = np.array([1, 2, 100, 200], dtype=np.float32)  # 2/4 survive
+        dist_b2a = np.array([1, 1, 1, 100], dtype=np.float32)  # 3/4 survive
+
+        result = compute_chamfer(dist_a2b, dist_b2a, max_dist=10.0)
+
+        assert result["coverage_a2b"] == pytest.approx(0.5)
+        assert result["coverage_b2a"] == pytest.approx(0.75)
+        assert result["coverage"] == pytest.approx(0.5), "coverage is the worst direction"
+        assert result["n_kept_a2b"] == 2
+        assert result["chamfer_a2b"] == pytest.approx(1.5)
+
+    def test_full_coverage_when_no_max_dist(self):
+        """Without max_dist every point contributes."""
+        dist_a2b = np.array([1, 2, 100], dtype=np.float32)
+        dist_b2a = np.array([1, 2], dtype=np.float32)
+
+        result = compute_chamfer(dist_a2b, dist_b2a, max_dist=None)
+
+        assert result["coverage"] == pytest.approx(1.0)
+        assert not math.isnan(result["chamfer"])
+
+    def test_fscore_nan_when_nothing_survives(self):
+        """F-score curve must be NaN, not 0.0, when the filtered set is empty."""
+        dist_a2b = np.array([100, 200], dtype=np.float32)
+        dist_b2a = np.array([300], dtype=np.float32)
+
+        result = compute_fscore_curve(dist_a2b, dist_b2a, [0.5, 1.0], max_dist=10.0)
+
+        assert np.all(np.isnan(result["fscore"]))
+        assert np.all(np.isnan(result["precision"]))
+
+    def test_fscore_zero_is_still_legitimate(self):
+        """Points that exist but fall beyond t give a real 0.0, not NaN."""
+        dist_a2b = np.array([5.0], dtype=np.float32)
+        dist_b2a = np.array([5.0], dtype=np.float32)
+
+        result = compute_fscore_curve(dist_a2b, dist_b2a, [1.0], max_dist=10.0)
+
+        assert result["fscore"][0] == 0.0
+        assert not np.isnan(result["fscore"][0])
 
 
 class TestComputeFscoreCurve:
