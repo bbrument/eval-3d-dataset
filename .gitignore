@@ -49,3 +49,6 @@ docs/
 
 # Watcher state files
 config/.*_state.json
+
+# Metrics-fix backup snapshots (local only)
+.metrics_fix_backups/

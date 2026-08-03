@@ -3,6 +3,16 @@
 import os
 os.environ.setdefault("PYOPENGL_PLATFORM", "osmesa")
 
+# Couleur de fond du rendu, configurable via env EVAL_BG="r,g,b" (0-1). Défaut: blanc (non-cassant).
+def _eval_bg():
+    s = os.environ.get("EVAL_BG", "1.0,1.0,1.0")
+    try:
+        r, g, b = (float(x) for x in s.split(","))
+        return [r, g, b, 1.0]
+    except Exception:
+        return [1.0, 1.0, 1.0, 1.0]
+_BG = _eval_bg()
+
 import cv2
 import numpy as np
 import trimesh
@@ -82,13 +92,13 @@ class OffscreenRenderer:
         if lighting_mode == "uniform":
             # Low ambient + strong directional for surface detail contrast
             scene = pyrender.Scene(
-                bg_color=[1.0, 1.0, 1.0, 1.0],
+                bg_color=_BG,
                 ambient_light=[0.3, 0.3, 0.3],
             )
         else:
             # High ambient for vivid vertex colors
             scene = pyrender.Scene(
-                bg_color=[1.0, 1.0, 1.0, 1.0],
+                bg_color=_BG,
                 ambient_light=[0.6, 0.6, 0.6],
             )
 

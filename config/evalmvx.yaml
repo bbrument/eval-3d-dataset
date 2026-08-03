@@ -1,0 +1,122 @@
+# eval-pipeline — EvalMVX (Yang et al., arXiv 2602.24065), 25 objets, 20 vues.
+#
+# Modèle : `config/sk3d.yaml` (même problématique d'unités) et `config/lucesmv.yaml`
+# (mêmes valeurs de seuils, objets de taille comparable).
+#
+# ============================================================================
+#  🔴 UNITÉS — LE PIÈGE PRINCIPAL DE CE DATASET (mesuré, pas supposé)
+# ============================================================================
+# Le papier annonce des Chamfer « en mm ». **Les meshes livrés ne sont PAS en mm.**
+#
+# Mesures faites sur les 25 `cameras_sphere.npz` et les 25 `mesh.obj` livrés
+# (script : `data/prepare_evalmvx.py` du repo DyNSR ; chiffres dans
+# `docs/comparisons/EVALMVX_WILDLIGHT.md`) :
+#
+#   * `scale_mat_i` = IDENTITÉ pour les 25 objets  -> aucun facteur d'échelle fourni ;
+#   * distance caméra maximale |C|max = **2.7272727 EXACTEMENT** pour les 25 objets
+#     (écart-type relatif = 0.000 %) -> c'est une **normalisation**, pas de la physique ;
+#   * |C|min varie de 2.107 (Dragon) à 2.643 (Bell) ;
+#   * diagonale de la bbox du mesh GT : 0.711 (Knight) à 1.312 (Hugo), unités normalisées ;
+#   * |v|max du mesh GT : 0.357 à 0.663.
+#
+# Le facteur vers les mm **n'est livré nulle part**. Estimation retenue, et sa dérivation :
+# le papier annonce une distance objet-caméra de **0.6–0.8 m** ; la plage mesurée de |C|
+# est 2.107–2.727. Les deux extrémités donnent
+#     0.60 m / 2.107 = 284.8 mm/unité      et      0.80 m / 2.727 = 293.3 mm/unité
+# soit un facteur cohérent à ±1.5 % près -> **289 mm/unité**, ce qui est aussi un
+# argument fort pour un facteur GLOBAL (le même pour les 25 objets) plutôt que
+# par objet.
+#
+# ⚠️ CONSÉQUENCES À TENIR :
+#   1. `units_scale_to_mm` ci-dessous est une **ESTIMATION à ±1.5 %**, pas une donnée.
+#      Une erreur d'échelle globale affecte TOUTES les méthodes de la même façon, donc
+#      les comparaisons relatives restent valides ; seule la valeur absolue en mm est
+#      incertaine. **Ne pas poser un chiffre absolu à côté de la Table 2 du papier sans
+#      avoir confirmé ce facteur auprès des auteurs.**
+#   2. Comme pour sk3d, c'est le **builder d'arbre** qui applique le facteur (le pipeline
+#      ne lit pas encore `gt_units`). Si l'arbre est construit SANS conversion, les
+#      seuils ci-dessous (en mm) valent alors 289x trop grand -> `max_dist: 5.0`
+#      couvrirait 1445 mm, donc AUCUN filtrage, **sans planter**. C'est exactement le
+#      piège sk3d. Vérifier la diagonale du mesh dans l'arbre avant toute campagne :
+#      elle doit valoir ~205–379 mm, pas ~0.7–1.3.
+#   3. Le jour où le facteur est confirmé, **une seule constante change ici**.
+dataset:
+  name: "evalmvx"
+
+  gt_units: "normalized"        # ni mm ni m : repère normalisé du cameras_sphere.npz
+  units_scale_to_mm: 289.0      # 🔴 ESTIMÉ (±1.5 %) — voir la dérivation ci-dessus
+
+  objects:
+    - "Bell"
+    - "Bird"
+    - "BlackDog"
+    - "Cambodia"
+    - "Caw"
+    - "Chess"
+    - "Dragon"
+    - "Duck"
+    - "Face"
+    - "Frog"
+    - "Hugo"
+    - "Knight"
+    - "Monk1"
+    - "Monk2"
+    - "Monkey"
+    - "Mummy"
+    - "Owl1"
+    - "Owl2"
+    - "Pig"
+    - "SilverDog"
+    - "Snail"
+    - "Sphinx"
+    - "Swan"
+    - "Tiger"
+    - "Yoga"
+
+  normals_priors: []            # ⚠ liste vide, PAS null (le loader plante sinon)
+  methods: []                   # auto-détection par le watcher
+  num_views: 20
+
+paths:
+  data_root: "/projects/m25115/eval_3d_datasets/evalmvx/data/{object}"
+  eval_root: "/projects/m25115/eval_3d_datasets/evalmvx/eval/{object}"
+
+cleanup:
+  dilation_radius: 12
+  use_masks: true
+
+evaluation:
+  # ⚠ EN MILLIMÈTRES (donc APRÈS application de units_scale_to_mm par le builder).
+  # Valeurs alignées sur `lucesmv.yaml` : les objets EvalMVX (diagonale estimée
+  # 205–379 mm) sont du même ordre, voire un peu plus grands, que ceux de LUCES-MV
+  # (Bowl : 155 mm) -> `max_dist=2.0` (valeur DiLiGenT-MV) écrêterait trop.
+  downsample_density: 0.07
+  max_dist: 5.0
+  fscore_thresholds: [0.5, 1.0, 1.5, 2.0, 3.0, 5.0]
+
+visualization:
+  auto_generate: false
+  default_metrics:
+    - uniform
+    - accuracy
+    - completeness
+  scale: 1.0
+  crop: true
+  crop_margin: 15
+  colormaps:
+    accuracy: jet
+    completeness: jet
+  max_dist: 3.0
+  exclude_mode: none
+
+execution:
+  mode: "slurm"
+  local:
+    max_workers: 4
+  slurm:
+    account: "m25115"
+    partition: "mesonet"
+
+watcher:
+  scan_interval_minutes: 15
+  log_file: "/projects/m25115/eval_3d_datasets/evalmvx/eval_watcher.log"

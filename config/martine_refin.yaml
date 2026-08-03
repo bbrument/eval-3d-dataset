@@ -1,4 +1,4 @@
-# ECCV Dataset Evaluation — refined T2S variant (refin_pct90)
+# NeurIPS Dataset Evaluation — refined T2S variant (refin_pct90)
 # Data root points to 09_unimsps_d{N}_refin_pct90/ which contains:
 #   - sfm.json   : refined poses in GT metric space
 #   - masks/     : refined DMR masks at downscale 2

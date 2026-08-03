@@ -1,4 +1,4 @@
-# ECCV Dataset Evaluation Configuration
+# NeurIPS Dataset Evaluation Configuration
 dataset:
   name: "eccv_dataset"
   objects:

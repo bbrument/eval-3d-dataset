@@ -1,4 +1,4 @@
-# ECCV Dataset — Visualization with exclude_mode=remove
+# NeurIPS Dataset — Visualization with exclude_mode=remove
 # Only for objects with significant excluded regions: 03, 07, 15, 22
 dataset:
   name: "eccv_viz_remove"

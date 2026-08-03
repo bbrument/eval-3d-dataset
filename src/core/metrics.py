@@ -34,26 +34,48 @@ def compute_chamfer(dist_a2b: np.ndarray, dist_b2a: np.ndarray, max_dist: float 
 
     Returns:
         Dictionary with:
-            - chamfer_a2b: Mean distance A to B
-            - chamfer_b2a: Mean distance B to A
-            - chamfer: Average of both directions
-            - n_filtered_a2b: Number of filtered points (if max_dist set)
-            - n_filtered_b2a: Number of filtered points (if max_dist set)
+            - chamfer_a2b: Mean distance A to B (NaN if no point survives max_dist)
+            - chamfer_b2a: Mean distance B to A (NaN if no point survives max_dist)
+            - chamfer: Average of both directions (NaN propagates)
+            - n_filtered_a2b: Number of filtered-out points (if max_dist set)
+            - n_filtered_b2a: Number of filtered-out points (if max_dist set)
+            - n_kept_a2b: Number of points that actually contributed to chamfer_a2b
+            - n_kept_b2a: Number of points that actually contributed to chamfer_b2a
+            - coverage_a2b: Fraction of A points within max_dist (contributing fraction)
+            - coverage_b2a: Fraction of B points within max_dist
+            - coverage: min(coverage_a2b, coverage_b2a) — the conservative summary
+
+    Note on the empty-set case: returning 0.0 (the historical behaviour) awarded a
+    *perfect* score to a reconstruction so misaligned that not a single point fell
+    within max_dist. NaN is returned instead so the failure propagates into any mean
+    and cannot be silently ranked as best. `coverage` exposes the *continuous* form of
+    the same bias: a chamfer computed on 1% of the points is an artefact, not a score.
     """
+    n_a_total = len(dist_a2b)
+    n_b_total = len(dist_b2a)
+
     if max_dist is not None:
         dist_a2b_filt = dist_a2b[dist_a2b < max_dist]
         dist_b2a_filt = dist_b2a[dist_b2a < max_dist]
-        n_filtered_a2b = len(dist_a2b) - len(dist_a2b_filt)
-        n_filtered_b2a = len(dist_b2a) - len(dist_b2a_filt)
     else:
         dist_a2b_filt = dist_a2b
         dist_b2a_filt = dist_b2a
-        n_filtered_a2b = 0
-        n_filtered_b2a = 0
 
-    chamfer_a2b = float(np.mean(dist_a2b_filt)) if len(dist_a2b_filt) > 0 else 0.0
-    chamfer_b2a = float(np.mean(dist_b2a_filt)) if len(dist_b2a_filt) > 0 else 0.0
+    n_kept_a2b = len(dist_a2b_filt)
+    n_kept_b2a = len(dist_b2a_filt)
+    n_filtered_a2b = n_a_total - n_kept_a2b
+    n_filtered_b2a = n_b_total - n_kept_b2a
+
+    chamfer_a2b = float(np.mean(dist_a2b_filt)) if n_kept_a2b > 0 else float("nan")
+    chamfer_b2a = float(np.mean(dist_b2a_filt)) if n_kept_b2a > 0 else float("nan")
     chamfer = (chamfer_a2b + chamfer_b2a) / 2
+
+    coverage_a2b = n_kept_a2b / n_a_total if n_a_total > 0 else float("nan")
+    coverage_b2a = n_kept_b2a / n_b_total if n_b_total > 0 else float("nan")
+    if n_a_total > 0 and n_b_total > 0:
+        coverage = min(coverage_a2b, coverage_b2a)
+    else:
+        coverage = float("nan")
 
     return {
         "chamfer_a2b": chamfer_a2b,
@@ -61,6 +83,11 @@ def compute_chamfer(dist_a2b: np.ndarray, dist_b2a: np.ndarray, max_dist: float 
         "chamfer": chamfer,
         "n_filtered_a2b": n_filtered_a2b,
         "n_filtered_b2a": n_filtered_b2a,
+        "n_kept_a2b": n_kept_a2b,
+        "n_kept_b2a": n_kept_b2a,
+        "coverage_a2b": coverage_a2b,
+        "coverage_b2a": coverage_b2a,
+        "coverage": coverage,
     }
 
 
@@ -102,9 +129,24 @@ def compute_fscore_curve(
     recall = np.zeros(len(thresholds), dtype=np.float32)
     fscore = np.zeros(len(thresholds), dtype=np.float32)
 
+    # An empty filtered set means "not one point survived max_dist", which is a failure,
+    # not a score of 0 on a well-defined denominator. NaN keeps it out of any mean and
+    # out of any "best value" ranking. Note this is distinct from a legitimate 0.0,
+    # which happens when points exist but none fall under threshold t.
+    if n_a == 0 or n_b == 0:
+        precision[:] = np.nan
+        recall[:] = np.nan
+        fscore[:] = np.nan
+        return {
+            "thresholds": thresholds,
+            "precision": precision,
+            "recall": recall,
+            "fscore": fscore,
+        }
+
     for i, t in enumerate(thresholds):
-        prec = np.sum(dist_a2b < t) / n_a if n_a > 0 else 0.0
-        rec = np.sum(dist_b2a < t) / n_b if n_b > 0 else 0.0
+        prec = np.sum(dist_a2b < t) / n_a
+        rec = np.sum(dist_b2a < t) / n_b
 
         if prec + rec > 0:
             f = 2 * prec * rec / (prec + rec)

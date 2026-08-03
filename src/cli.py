@@ -8,6 +8,19 @@ import click
 
 from .config import load_config
 
+# Archived result trees. These are snapshots kept deliberately; sweeping them would
+# rewrite history and is almost never what a caller wants.
+_BACKUP_MARKERS = ("__submitted_bak", "__pre_cleanup_bak", "__rerun", "__bak")
+
+
+def _is_backup_path(path: Path) -> bool:
+    """True if any path component marks an archived/backup result tree.
+
+    Substring match, not prefix: the markers appear as suffixes in practice
+    (`meshroom_d1__rerun2`, `supernormal_d4__bak100k`).
+    """
+    return any(marker in part for part in path.parts for marker in _BACKUP_MARKERS)
+
 
 @click.group()
 @click.option("--config", "-c", type=click.Path(exists=True), required=True, help="Path to config YAML file")
@@ -76,35 +89,6 @@ def preprocess_taxonomy(ctx, object_name, taxonomy_dir, force):
 
     config = ctx.obj["config"]
     _preprocess(config, Path(taxonomy_dir), object_name, force)
-
-
-@main.command(name="preprocess-gt-normals")
-@click.option("--object", "-o", "object_name", help="Object name (default: all)")
-@click.option("--pose-source", "-p", type=click.Choice(["mvs", "mvps", "all"]), default="all",
-              help="Pose source to render (default: all)")
-@click.option("--downscale", "-d", type=click.Choice(["d1", "d2", "d4", "d8", "all"]), default="all",
-              help="Downscale to render (default: all)")
-@click.option("--force", "-f", is_flag=True, help="Overwrite existing files")
-@click.pass_context
-def preprocess_gt_normals(ctx, object_name, pose_source, downscale, force):
-    """Render GT normal maps from GT mesh for all views/poses/downscales."""
-    from .pipeline.preprocess_gt_normals import preprocess_gt_normals as _preprocess
-
-    config = ctx.obj["config"]
-
-    if config.normals is None:
-        click.echo("Error: 'normals' section required in config YAML")
-        return
-
-    objects = [object_name] if object_name else config.dataset.objects
-    pose_sources = None if pose_source == "all" else [pose_source]
-    downscales = None if downscale == "all" else [downscale]
-
-    for obj in objects:
-        try:
-            _preprocess(config, obj, pose_sources=pose_sources, downscales=downscales, force=force)
-        except FileNotFoundError as e:
-            click.echo(f"Skipping {obj}: {e}")
 
 
 @main.command()
@@ -430,8 +414,13 @@ def visualize(ctx, object_name, method_name, metrics, views, scale, cmap, max_di
 @click.option("--n-thresholds", "-n", default=100, type=int, help="Number of thresholds")
 @click.option("--max-threshold", default=1.5, type=float, help="Max threshold in mm")
 @click.option("--force", "-f", is_flag=True, help="Overwrite existing curves")
+@click.option(
+    "--extra-exclude",
+    multiple=True,
+    help="Additional GT exclusion mask(s), e.g. 'invisible' -> challenges/invisible.npy",
+)
 @click.pass_context
-def curves(ctx, object_name, method_name, n_thresholds, max_threshold, force):
+def curves(ctx, object_name, method_name, n_thresholds, max_threshold, force, extra_exclude):
     """Compute dense precision/recall/F-score curves from saved distances.
 
     Only runs for combos that already have results_cleaned and distances.
@@ -441,6 +430,7 @@ def curves(ctx, object_name, method_name, n_thresholds, max_threshold, force):
     config = ctx.obj["config"]
     objects = [object_name] if object_name else config.dataset.objects
     methods = [method_name] if method_name else None
+    extra = list(extra_exclude) or None
 
     computed = 0
     for obj in objects:
@@ -458,7 +448,9 @@ def curves(ctx, object_name, method_name, n_thresholds, max_threshold, force):
             ]
 
         for method in method_list:
-            result = compute_curves(config, obj, method, n_thresholds, max_threshold, force)
+            result = compute_curves(
+                config, obj, method, n_thresholds, max_threshold, force, extra_exclude=extra
+            )
             if result is not None:
                 computed += 1
 
@@ -468,13 +460,24 @@ def curves(ctx, object_name, method_name, n_thresholds, max_threshold, force):
 @main.command()
 @click.option("--object", "-o", "object_name", help="Object name (default: all)")
 @click.option("--method", "-m", "method_name", help="Method name (default: all)")
+@click.option(
+    "--extra-exclude",
+    multiple=True,
+    help="Additional GT exclusion mask(s), e.g. 'invisible' -> challenges/invisible.npy",
+)
+@click.option(
+    "--allow-backup-dirs",
+    is_flag=True,
+    help="Also process __*_bak / __rerun* directories (off by default: they are archives)",
+)
 @click.pass_context
-def recompute(ctx, object_name, method_name):
+def recompute(ctx, object_name, method_name, extra_exclude, allow_backup_dirs):
     """Recompute metrics.json + curves from saved distances (no re-eval needed)."""
     from .pipeline.recompute import recompute_metrics
 
     config = ctx.obj["config"]
     objects = [object_name] if object_name else config.dataset.objects
+    extra = list(extra_exclude) or None
 
     computed = 0
     for obj in objects:
@@ -488,11 +491,13 @@ def recompute(ctx, object_name, method_name):
             method_list = [
                 str(d.parent.relative_to(eval_root))
                 for d in eval_root.rglob("results_raw")
-                if d.is_dir() and "Groundtruth" not in d.parts
+                if d.is_dir()
+                and "Groundtruth" not in d.parts
+                and (allow_backup_dirs or not _is_backup_path(d))
             ]
 
         for method in method_list:
-            result = recompute_metrics(config, obj, method)
+            result = recompute_metrics(config, obj, method, extra_exclude=extra)
             if result is not None:
                 computed += 1
 
