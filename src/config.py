@@ -98,9 +98,6 @@ class SlurmConfig(BaseModel):
     cleanup: SlurmResourceConfig = Field(default_factory=lambda: SlurmResourceConfig(cpus=4, mem_gb=48, time="02:00:00"))
     eval: SlurmResourceConfig = Field(default_factory=lambda: SlurmResourceConfig(cpus=16, mem_gb=64, time="04:00:00"))
     viz: SlurmResourceConfig = Field(default_factory=lambda: SlurmResourceConfig(cpus=4, mem_gb=32, time="01:00:00"))
-    gt_normals: SlurmResourceConfig = Field(
-        default_factory=lambda: SlurmResourceConfig(cpus=16, mem_gb=128, time="04:00:00")
-    )
 
 
 class LocalConfig(BaseModel):
@@ -164,37 +161,6 @@ class VisualizationConfig(BaseModel):
         description="Default colormaps per metric"
     )
     max_dist: float = Field(default=5.0, gt=0, description="Max distance for error coloring")
-    mae_vmax: float = Field(default=45.0, gt=0, description="Max angular error for MAE colormap (degrees)")
-
-
-class NormalsRenderingConfig(BaseModel):
-    """Normal map rendering configuration."""
-    samples: int = Field(default=3, ge=1, description="AA samples per axis")
-    chunk_size: int = Field(default=1_000_000, gt=0, description="Rays per batch")
-
-
-class NormalsVisualizationConfig(BaseModel):
-    """Normal map visualization configuration."""
-    cmap: str = Field(default="jet", description="Colormap for MAE heatmaps")
-    vmin: float = Field(default=0.0, ge=0, description="Min angular error (degrees)")
-    vmax: float = Field(default=45.0, gt=0, description="Max angular error (degrees)")
-
-
-class NormalsConfig(BaseModel):
-    """Normal map evaluation configuration."""
-    enabled: bool = Field(default=False, description="Enable MAE evaluation")
-    objects_root: str = Field(description="Root directory for dataset objects")
-    gt_mesh_path: Optional[str] = Field(default=None, description="Override GT mesh path")
-    pose_sources: dict[str, str] = Field(description="Pose source templates keyed by name")
-    method_pose_mapping: dict[str, str] = Field(
-        default_factory=lambda: {"default": "mvs"},
-        description="Method name -> pose source mapping"
-    )
-    downscale_override: dict[str, str] = Field(default_factory=dict, description="Method name -> downscale override")
-    normal_dirs: dict[str, str] = Field(default_factory=dict, description="Named templates for pre-computed normal directories")
-    method_normal_source: dict[str, str] = Field(default_factory=dict, description="Method name -> normal_dirs key")
-    rendering: NormalsRenderingConfig = Field(default_factory=NormalsRenderingConfig)
-    visualization: NormalsVisualizationConfig = Field(default_factory=NormalsVisualizationConfig)
 
 
 class Config(BaseModel):
@@ -209,7 +175,6 @@ class Config(BaseModel):
     execution: ExecutionConfig = Field(default_factory=ExecutionConfig)
     aggregation: AggregationConfig = Field(default_factory=AggregationConfig)
     visualization: VisualizationConfig = Field(default_factory=VisualizationConfig)
-    normals: Optional[NormalsConfig] = Field(default=None, description="Normal map evaluation config")
 
     def _resolve_template(self, template: str, object_name: str, method_name: str = None) -> Path:
         """Resolve path template with placeholders.
@@ -371,63 +336,11 @@ class Config(BaseModel):
         """Get the cleaned mesh path."""
         return self.get_method_dir(object_name, method_name) / "results_cleaned" / "mesh.ply"
 
-    def get_normals_pose_source(self, method_name: str) -> str:
-        """Determine pose source for a method (mvs or mvps)."""
-        if self.normals is None:
-            return "mvs"
-        mapping = self.normals.method_pose_mapping
-        for key, source in mapping.items():
-            if key == "default":
-                continue
-            if key in method_name:
-                return source
-        return mapping.get("default", "mvs")
-
-    def get_normals_downscale(self, method_name: str) -> str:
-        """Parse downscale from method name or override config."""
-        if self.normals and method_name in self.normals.downscale_override:
-            return self.normals.downscale_override[method_name]
-        import re
-        match = re.search(r'_d(\d+)', method_name)
-        if match:
-            return f"d{match.group(1)}"
-        return "d1"
-
     def _resolve_downscale_suffix(self, downscale: str) -> str:
         """Convert downscale name to path suffix: d1->'', d2->'_d2', etc."""
         if downscale == "d1":
             return ""
         return f"_{downscale}"
-
-    def get_gt_normals_dir(self, object_name: str, pose_source: str, downscale: str) -> Path:
-        """Get GT normals directory."""
-        return self.get_gt_dir(object_name) / "normals" / pose_source / downscale
-
-    def resolve_normals_sfm_path(self, object_name: str, pose_source: str, downscale: str) -> Path:
-        """Resolve the sfm.json path for a given object/pose_source/downscale."""
-        if self.normals is None:
-            raise ValueError("normals config not set")
-        template = self.normals.pose_sources[pose_source]
-        suffix = self._resolve_downscale_suffix(downscale)
-        resolved = template.format(object=object_name, downscale=suffix)
-        return Path(self.normals.objects_root) / resolved
-
-    def get_method_normals_dir(self, object_name: str, method_name: str) -> Path | None:
-        """Get pre-computed normals dir for a method, or None if mesh-based."""
-        if self.normals is None:
-            return None
-        source_key = self.normals.method_normal_source.get(method_name)
-        if source_key is None:
-            return None
-        template = self.normals.normal_dirs[source_key]
-        downscale = self.get_normals_downscale(method_name)
-        suffix = self._resolve_downscale_suffix(downscale)
-        resolved = template.format(
-            objects_root=self.normals.objects_root,
-            object=object_name,
-            downscale=suffix,
-        )
-        return Path(resolved)
 
 
 def load_config(config_path: str | Path) -> Config:

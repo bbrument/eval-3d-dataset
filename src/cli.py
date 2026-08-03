@@ -91,35 +91,6 @@ def preprocess_taxonomy(ctx, object_name, taxonomy_dir, force):
     _preprocess(config, Path(taxonomy_dir), object_name, force)
 
 
-@main.command(name="preprocess-gt-normals")
-@click.option("--object", "-o", "object_name", help="Object name (default: all)")
-@click.option("--pose-source", "-p", type=click.Choice(["mvs", "mvps", "all"]), default="all",
-              help="Pose source to render (default: all)")
-@click.option("--downscale", "-d", type=click.Choice(["d1", "d2", "d4", "d8", "all"]), default="all",
-              help="Downscale to render (default: all)")
-@click.option("--force", "-f", is_flag=True, help="Overwrite existing files")
-@click.pass_context
-def preprocess_gt_normals(ctx, object_name, pose_source, downscale, force):
-    """Render GT normal maps from GT mesh for all views/poses/downscales."""
-    from .pipeline.preprocess_gt_normals import preprocess_gt_normals as _preprocess
-
-    config = ctx.obj["config"]
-
-    if config.normals is None:
-        click.echo("Error: 'normals' section required in config YAML")
-        return
-
-    objects = [object_name] if object_name else config.dataset.objects
-    pose_sources = None if pose_source == "all" else [pose_source]
-    downscales = None if downscale == "all" else [downscale]
-
-    for obj in objects:
-        try:
-            _preprocess(config, obj, pose_sources=pose_sources, downscales=downscales, force=force)
-        except FileNotFoundError as e:
-            click.echo(f"Skipping {obj}: {e}")
-
-
 @main.command()
 @click.option("--object", "-o", "object_name", help="Object name (default: all)")
 @click.option("--method", "-m", "method_name", help="Method name (default: all)")
