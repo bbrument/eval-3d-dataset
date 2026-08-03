@@ -109,8 +109,8 @@ def recompute_metrics(
     metrics["exclude_masks"] = [Path(p).name for p in applied_masks]
     metrics["max_dist"] = config.evaluation.max_dist
 
-    # Preserve additive keys written by other stages (e.g. normals MAE), which are not
-    # recomputable from distances and would otherwise be silently dropped.
+    # Preserve additive keys written by other stages, which are not recomputable
+    # from distances and would otherwise be silently dropped.
     metrics_path = eval_dir / "metrics.json"
     if metrics_path.exists():
         try:

@@ -244,8 +244,6 @@ def visualize_method(
             output_dir = vis_dir / metric
         elif metric in BOTH_METRICS:
             pass  # Handled specially below
-        elif metric == "mae":
-            pass  # Handled specially below
         else:
             print(f"  Unknown metric: {metric}")
             continue
@@ -295,70 +293,6 @@ def visualize_method(
                     print(f"    Generated {len(paths)} images")
             elif gt_uniform_rendered:
                 print(f"  uniform (GT): already rendered for bbox computation")
-            continue
-
-        # Image-space MAE heatmap — no mesh/pyrender needed
-        if metric == "mae":
-            normals_eval_dir = method_dir / "normals_eval" / "per_view"
-            if not normals_eval_dir.exists():
-                print(f"  Skipping mae: normals_eval/per_view not found")
-                continue
-
-            output_dir = vis_dir / "mae"
-            if output_dir.exists() and not force:
-                existing = list(output_dir.glob("view_*.png"))
-                if existing:
-                    print(f"  mae: already exists, skipping")
-                    results["mae"] = existing
-                    continue
-
-            output_dir.mkdir(parents=True, exist_ok=True)
-            import matplotlib.cm as cm
-
-            mae_cmap_name = colormaps.get("mae", "jet")
-            mae_vmax = 45.0
-            if config.normals and config.normals.visualization:
-                mae_cmap_name = config.normals.visualization.cmap
-                mae_vmax = config.normals.visualization.vmax
-
-            colormap_fn = cm.get_cmap(mae_cmap_name)
-            paths_out = []
-
-            # Use view indices to select npy files
-            npy_files = sorted(normals_eval_dir.glob("*.npy"))
-            view_list = view_indices if view_indices else list(range(len(npy_files)))
-
-            for idx in view_list:
-                if idx >= len(npy_files):
-                    continue
-
-                error_map = np.load(npy_files[idx])
-                mask = error_map > 0
-
-                # Normalize and apply colormap
-                normalized = np.clip(error_map / mae_vmax, 0.0, 1.0)
-                colored = (colormap_fn(normalized)[:, :, :3] * 255).astype(np.uint8)
-                colored[~mask] = [128, 128, 128]
-
-                # Crop using same bboxes if available
-                if crop and crop_bboxes and idx in crop_bboxes:
-                    x1, y1, x2, y2 = crop_bboxes[idx]
-                    colored = colored[y1:y2, x1:x2]
-
-                out_path = output_dir / f"view_{idx:04d}.png"
-                Image.fromarray(colored).save(out_path)
-                paths_out.append(out_path)
-
-            # Generate colorbar
-            if paths_out:
-                dummy = np.full((100, 100, 3), 255, dtype=np.uint8)
-                with_cb = add_colorbar(dummy, 0.0, mae_vmax, mae_cmap_name, "Angular Error (°)")
-                colorbar_img = with_cb[:, 100:]
-                cb_path = output_dir / "colorbar.png"
-                Image.fromarray(colorbar_img).save(cb_path)
-
-            results["mae"] = paths_out
-            print(f"    Generated {len(paths_out)} MAE heatmaps")
             continue
 
         # Check if already done
