@@ -284,13 +284,24 @@ class Config(BaseModel):
             # Return default path for error messages
             return gt_dir / "mesh.ply"
         
-        # Search for .ply files
-        ply_files = list(gt_dir.glob("*.ply"))
+        # Search for .ply files.
+        # DERIVED products living in the same directory must never be mistaken for the
+        # raw GT MESH. 'gt_pcd.ply' (the resampled point cloud) matches the old
+        # "contains gt, not clean" rule and would be picked as the source mesh -- with
+        # glob() returning filesystem order, that failure would be intermittent and
+        # silent. Exclude derived artefacts explicitly, and sort for determinism.
+        _DERIVED = ("clean", "pcd", "point", "sampled", "downsample")
+        ply_files = sorted(gt_dir.glob("*.ply"))
         if ply_files:
-            # Prefer files with 'gt' in name, otherwise take first
-            gt_files = [f for f in ply_files if 'gt' in f.name.lower() and 'clean' not in f.name.lower()]
+            candidates = [
+                f for f in ply_files
+                if not any(tag in f.name.lower() for tag in _DERIVED)
+            ]
+            gt_files = [f for f in candidates if "gt" in f.name.lower()]
             if gt_files:
                 return gt_files[0]
+            if candidates:
+                return candidates[0]
             return ply_files[0]
         
         # Return default path if nothing found
