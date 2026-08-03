@@ -86,13 +86,25 @@ def preprocess_gt(
         cameras_path = config.get_cameras_path(object_name)
         masks_dir = config.get_masks_dir(object_name)
         
+        # Fail loudly. The previous behaviour printed a warning, set clean_gt = False and
+        # CONTINUED, so an object silently ended up sampled from the RAW mesh while the
+        # caller believed it had been cleaned. That silent skip is how 17_knife lost its
+        # cleaning on 2026-05-04; nothing in the produced artefacts recorded the choice.
+        # If cleaning was explicitly requested and cannot be done, that is an error.
         if not cameras_path.exists():
-            print(f"  Warning: cameras.npz not found, skipping GT cleaning")
-            clean_gt = False
-        elif not masks_dir.exists() and config.cleanup.use_masks:
-            print(f"  Warning: masks dir not found, skipping GT cleaning")
-            clean_gt = False
-        else:
+            raise FileNotFoundError(
+                f"GT cleaning requested for {object_name} but no camera file was found. "
+                f"Looked under {cameras_path.parent} for cameras.npz / sfm.json / "
+                f"cameras.json / *.sfm. Pass --no-clean-gt to sample from the raw mesh "
+                f"on purpose, but do not let it happen silently."
+            )
+        if not masks_dir.exists() and config.cleanup.use_masks:
+            raise FileNotFoundError(
+                f"GT cleaning requested for {object_name} with use_masks=True but the "
+                f"masks directory is missing: {masks_dir}. Set cleanup.use_masks=false "
+                f"or pass --no-clean-gt explicitly."
+            )
+        if True:
             # Load and merge all parts
             merged_mesh = None
             for p in parts:
@@ -168,6 +180,38 @@ def preprocess_gt(
         np.save(gt_pcd_path, gt_pcd)
         print(f"  Saved gt_pcd.npy")
 
+        # Companion .ply of the same cloud, for inspection in a mesh viewer. The .npy is
+        # the one the pipeline reads; this is purely so the resampled cloud can be looked
+        # at without writing a script.
+        try:
+            import trimesh as _tm
+            _tm.PointCloud(gt_pcd).export(gt_dir / "gt_pcd.ply")
+            print(f"  Saved gt_pcd.ply ({len(gt_pcd):,} points)")
+        except Exception as _e:  # noqa: BLE001
+            print(f"  Warning: could not write gt_pcd.ply ({_e})")
+
+        # Provenance. Until now NO produced artefact recorded which mesh gt_pcd.npy was
+        # sampled from, so "is this object cleaned?" could only be answered by hunting
+        # through SLURM logs -- and the presence of gt_cleaned.ply does NOT prove the
+        # point cloud came from it. Write the answer next to the data.
+        import json as _json
+        from datetime import datetime as _dt
+        _prov = {
+            "gt_pcd_sampled_from": "gt_cleaned.ply" if cleaned_mesh_path.exists() else "raw_merged",
+            "source_mesh_path": str(mesh_to_use) if cleaned_mesh_path.exists() else [str(p) for p in parts],
+            "clean_gt_requested": bool(clean_gt),
+            "n_points": int(len(gt_pcd)),
+            "mesh_vertices": int(len(mesh.vertices)),
+            "mesh_faces": int(len(mesh.faces)),
+            "use_masks": bool(config.cleanup.use_masks),
+            "dilation_radius": int(config.cleanup.dilation_radius),
+            "density": float(config.evaluation.downsample_density),
+            "written": _dt.now().isoformat(timespec="seconds"),
+        }
+        with open(gt_dir / "gt_pcd_provenance.json", "w") as _f:
+            _json.dump(_prov, _f, indent=2)
+        print(f"  Saved gt_pcd_provenance.json ({_prov['gt_pcd_sampled_from']})")
+
     attributes_dir.mkdir(parents=True, exist_ok=True)
 
     if compute_curvature:
@@ -188,11 +232,20 @@ def preprocess_gt(
             cameras_path = config.get_cameras_path(object_name)
             masks_dir = config.get_masks_dir(object_name)
 
+            # Same rule as the cleaning block above: requested-but-impossible is an error,
+            # not a warning. A missing visibility_count.npy is silently indistinguishable
+            # from one that was never computed.
             if not cameras_path.exists():
-                print(f"  Warning: cameras.npz not found, skipping visibility")
-            elif not masks_dir.exists() and config.cleanup.use_masks:
-                print(f"  Warning: masks dir not found, skipping visibility")
-            else:
+                raise FileNotFoundError(
+                    f"Visibility requested for {object_name} but no camera file was found "
+                    f"under {cameras_path.parent}. Pass --no-visibility to skip on purpose."
+                )
+            if not masks_dir.exists() and config.cleanup.use_masks:
+                raise FileNotFoundError(
+                    f"Visibility requested for {object_name} with use_masks=True but the "
+                    f"masks directory is missing: {masks_dir}."
+                )
+            if True:
                 print(f"  Computing visibility counts")
                 cameras = load_cameras_auto(cameras_path)
                 visibility = compute_visibility_count(
