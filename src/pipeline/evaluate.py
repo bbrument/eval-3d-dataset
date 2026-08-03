@@ -9,6 +9,7 @@ from ..config import Config
 from ..core.mesh import load_mesh
 from ..core.sampling import upsample_mesh, downsample_pcd
 from ..core.metrics import compute_distances, compute_metrics
+from ..core.masking import load_gt_exclude, apply_exclude
 import cv2
 from ..core.normals import load_normal_map, compute_mae, render_normals_from_mesh
 
@@ -19,6 +20,7 @@ def evaluate(
     method_name: str,
     force: bool = False,
     seed: int = 42,
+    extra_exclude: list[str] | None = None,
 ) -> dict:
     """Evaluate a reconstructed mesh against ground truth.
 
@@ -86,20 +88,20 @@ def evaluate(
     dist_data2gt, idx_data2gt = compute_distances(data_down, gt_pcd)
     dist_gt2data, idx_gt2data = compute_distances(gt_pcd, data_down)
 
-    # Apply excluded mask if it exists
-    excluded_path = gt_dir / "challenges" / "excluded.npy"
-    if excluded_path.exists():
-        excluded = np.load(excluded_path)
-        gt_keep = ~excluded
-        data_keep = gt_keep[idx_data2gt]
-        n_gt_excl = excluded.sum()
-        n_data_excl = (~data_keep).sum()
-        print(f"  Applying excluded mask: {n_gt_excl:,} GT points, {n_data_excl:,} data points excluded")
-        dist_gt2data_filtered = dist_gt2data[gt_keep]
-        dist_data2gt_filtered = dist_data2gt[data_keep]
-    else:
-        dist_gt2data_filtered = dist_gt2data
-        dist_data2gt_filtered = dist_data2gt
+    # Apply GT exclusion mask(s). Shared with recompute/curves via core.masking so the
+    # three code paths can no longer diverge.
+    #
+    # `challenges/invisible.npy` (visibility_count == 0) is in `core.masking.AUTO_EXCLUDE`
+    # and is therefore applied here **unconditionally when the file exists**, with no flag
+    # to pass and no follow-up pass to run. Every cell this function writes carries the
+    # mask by construction; `metrics["exclude_masks"]` below records exactly which files
+    # were used, so the claim is checkable per cell rather than assumed corpus-wide.
+    exclude, applied_masks = load_gt_exclude(
+        gt_dir, n_gt=len(gt_pcd), extra_exclude=extra_exclude
+    )
+    dist_data2gt_filtered, dist_gt2data_filtered = apply_exclude(
+        dist_data2gt, dist_gt2data, idx_data2gt, exclude
+    )
 
     print(f"  Computing metrics")
     metrics = compute_metrics(
@@ -111,6 +113,8 @@ def evaluate(
     metrics["seed"] = seed
     metrics["n_gt_points"] = len(gt_pcd)
     metrics["n_data_points"] = len(data_down)
+    metrics["exclude_masks"] = [Path(p).name for p in applied_masks]
+    metrics["max_dist"] = config.evaluation.max_dist
 
     eval_dir.mkdir(parents=True, exist_ok=True)
     distances_dir = eval_dir / "distances"

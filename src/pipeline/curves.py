@@ -6,6 +6,7 @@ import numpy as np
 
 from ..config import Config
 from ..core.metrics import compute_fscore_curve
+from ..core.masking import load_gt_exclude, apply_exclude
 
 
 def compute_curves(
@@ -15,6 +16,7 @@ def compute_curves(
     n_thresholds: int = 100,
     max_threshold: float = 1.5,
     force: bool = False,
+    extra_exclude: list[str] | None = None,
 ) -> dict | None:
     """Compute dense P/R/F curves from pre-computed distances.
 
@@ -55,6 +57,23 @@ def compute_curves(
 
     dist_data2gt = np.load(d2g_path)
     dist_gt2data = np.load(g2d_path)
+
+    # Apply the same GT exclusion mask as `evaluate`. Without this the curves written
+    # here contradicted the metrics.json written next to them for the 21 of 27 objects
+    # carrying an excluded.npy — and `curves` runs *after* `evaluate`, so it was the
+    # inconsistent version that survived on disk.
+    idx_path = distances_dir / "data2gt_idx.npy"
+    gt_dir = config.get_gt_dir(object_name)
+    exclude, _applied = load_gt_exclude(
+        gt_dir, n_gt=len(dist_gt2data), extra_exclude=extra_exclude
+    )
+    if exclude is not None:
+        if not idx_path.exists():
+            print("    Cannot apply exclusion mask: data2gt_idx.npy missing — skipping")
+            return None
+        dist_data2gt, dist_gt2data = apply_exclude(
+            dist_data2gt, dist_gt2data, np.load(idx_path), exclude
+        )
 
     thresholds = np.linspace(0, max_threshold, n_thresholds)
     result = compute_fscore_curve(dist_data2gt, dist_gt2data, thresholds, max_dist=config.evaluation.max_dist)
