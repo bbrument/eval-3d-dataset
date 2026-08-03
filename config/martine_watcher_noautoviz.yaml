@@ -1,4 +1,4 @@
-# ECCV Dataset Watcher — auto-detect all methods, all objects, cleanup+eval+viz
+# NeurIPS Dataset Watcher — auto-detect all methods, all objects, cleanup+eval+viz
 # Uses scan_mode=auto (filesystem discovery, no methods list needed)
 dataset:
   name: "martine_watcher_noautoviz"
