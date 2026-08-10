@@ -76,7 +76,7 @@ def compute_curves(
         )
 
     thresholds = np.linspace(0, max_threshold, n_thresholds)
-    result = compute_fscore_curve(dist_data2gt, dist_gt2data, thresholds, max_dist=config.evaluation.max_dist)
+    result = compute_fscore_curve(dist_data2gt, dist_gt2data, thresholds)
 
     out_dir.mkdir(parents=True, exist_ok=True)
     np.save(out_dir / "thresholds.npy", result["thresholds"])

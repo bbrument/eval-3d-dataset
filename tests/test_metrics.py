@@ -125,12 +125,12 @@ class TestComputeChamfer:
         assert result["coverage"] == pytest.approx(1.0)
         assert not math.isnan(result["chamfer"])
 
-    def test_fscore_nan_when_nothing_survives(self):
-        """F-score curve must be NaN, not 0.0, when the filtered set is empty."""
-        dist_a2b = np.array([100, 200], dtype=np.float32)
+    def test_fscore_nan_when_no_points_at_all(self):
+        """F-score curve must be NaN, not 0.0, when a side has no points."""
+        dist_a2b = np.array([], dtype=np.float32)
         dist_b2a = np.array([300], dtype=np.float32)
 
-        result = compute_fscore_curve(dist_a2b, dist_b2a, [0.5, 1.0], max_dist=10.0)
+        result = compute_fscore_curve(dist_a2b, dist_b2a, [0.5, 1.0])
 
         assert np.all(np.isnan(result["fscore"]))
         assert np.all(np.isnan(result["precision"]))
@@ -140,7 +140,7 @@ class TestComputeChamfer:
         dist_a2b = np.array([5.0], dtype=np.float32)
         dist_b2a = np.array([5.0], dtype=np.float32)
 
-        result = compute_fscore_curve(dist_a2b, dist_b2a, [1.0], max_dist=10.0)
+        result = compute_fscore_curve(dist_a2b, dist_b2a, [1.0])
 
         assert result["fscore"][0] == 0.0
         assert not np.isnan(result["fscore"][0])
@@ -197,6 +197,39 @@ class TestComputeFscoreCurve:
         assert result["precision"][2] == pytest.approx(1.0)
         assert result["recall"][2] == pytest.approx(1.0)
 
+    def test_outliers_stay_in_the_denominator(self):
+        """Regression: far points must count as misses, never be filtered away.
+
+        The curve used to drop distances above `evaluation.max_dist` before taking
+        `n_a` / `n_b`, which shrank the denominator without touching the numerator
+        and reported `precision_true / coverage`. Here 2 of 4 reconstructed points
+        and 1 of 4 GT points are gross outliers: precision at t=1.0 is 2/4, not 2/2.
+        """
+        dist_a2b = np.array([0.5, 0.5, 100.0, 200.0], dtype=np.float32)
+        dist_b2a = np.array([0.5, 0.5, 0.5, 300.0], dtype=np.float32)
+
+        result = compute_fscore_curve(dist_a2b, dist_b2a, thresholds=[1.0])
+
+        assert result["precision"][0] == pytest.approx(0.5)
+        assert result["recall"][0] == pytest.approx(0.75)
+        assert result["fscore"][0] == pytest.approx(2 * 0.5 * 0.75 / 1.25)
+
+    def test_threshold_above_outlier_range_is_not_saturated(self):
+        """Regression: a threshold at or beyond the old max_dist forced 1.0.
+
+        Every surviving point satisfied `d < max_dist <= t`, so precision, recall
+        and F-score were pinned to 1.0 by construction — the case actually hit by
+        the shipped configs (martine: max_dist 4.0 with a 5.0 threshold; sk3d:
+        max_dist 5.0 with a 5.0 threshold).
+        """
+        dist_a2b = np.array([1.0, 1.0, 1.0, 100.0], dtype=np.float32)
+        dist_b2a = np.array([1.0, 100.0], dtype=np.float32)
+
+        result = compute_fscore_curve(dist_a2b, dist_b2a, thresholds=[5.0])
+
+        assert result["precision"][0] == pytest.approx(0.75)
+        assert result["recall"][0] == pytest.approx(0.5)
+
 
 class TestComputeMetrics:
     """Integration tests for compute_metrics."""
@@ -241,3 +274,21 @@ class TestComputeMetrics:
         assert isinstance(result["chamfer"], float)
         assert isinstance(result["chamfer_a2b"], float)
         assert isinstance(result["chamfer_b2a"], float)
+
+    def test_max_dist_clips_chamfer_only(self):
+        """max_dist bounds the Chamfer average but must not touch precision/recall."""
+        dist_data2gt = np.array([1.0, 1.0, 100.0], dtype=np.float32)
+        dist_gt2data = np.array([1.0, 1.0], dtype=np.float32)
+
+        result = compute_metrics(
+            dist_data2gt, dist_gt2data, thresholds=[2.0], max_dist=10.0
+        )
+
+        # Chamfer: outlier dropped, averaged over the 2 survivors
+        assert result["chamfer_a2b"] == pytest.approx(1.0)
+        assert result["n_filtered_a2b"] == 1
+        assert result["coverage_a2b"] == pytest.approx(2 / 3)
+
+        # Precision: the outlier is a miss, so 2/3 — not 2/2
+        assert result["precision"][0] == pytest.approx(2 / 3)
+        assert result["recall"][0] == pytest.approx(1.0)

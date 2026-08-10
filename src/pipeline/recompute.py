@@ -143,9 +143,7 @@ def recompute_metrics(
     if thresholds_path.exists():
         existing_t = np.load(thresholds_path)
         if len(existing_t) > len(curve_out["thresholds"]):
-            dense = compute_fscore_curve(
-                dist_data2gt, dist_gt2data, existing_t, config.evaluation.max_dist
-            )
+            dense = compute_fscore_curve(dist_data2gt, dist_gt2data, existing_t)
             curve_out = {k: np.asarray(v) for k, v in dense.items()}
             print(f"    preserved dense curve resolution: {len(existing_t)} thresholds")
 

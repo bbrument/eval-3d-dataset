@@ -37,6 +37,18 @@ disagree with the `metrics.json` beside them for every object carrying a
 100 thresholds could be rewritten on the 5 reporting thresholds, silently, so plots regenerated
 afterwards were a coarse resampling of themselves.
 
+**5. `max_dist` was applied to precision and recall.** Distances above `max_dist` were dropped
+before counting, so the denominator became the number of *surviving* points while the numerator
+was untouched — a point at `d >= max_dist` could never satisfy `d < t` for `t <= max_dist`
+anyway. Every reported value was therefore `precision_true / coverage_a2b` (resp.
+`recall_true / coverage_b2a`): an overestimate that grew exactly as the reconstruction got
+worse. Where a reporting threshold reached `max_dist` it collapsed further — every surviving
+point counted, pinning precision, recall and F-score to `1.0` by construction. Both shipped
+configurations hit that case (*martine*: `max_dist: 4.0` with a `5.0` threshold; *sk3d*:
+`max_dist: 5.0` with a `5.0` threshold), and so did the whole tail of every dense curve beyond
+`max_dist`. Precision, recall and F-score are now computed over the full point sets; `max_dist`
+survives on the Chamfer distance only, where clipping a robust mean is the intended behaviour.
+
 Cross-version results should be regenerated, not reconciled.
 
 ---
@@ -118,8 +130,8 @@ else is required.
 | key | unit | what it does |
 |---|---|---|
 | `evaluation.downsample_density` | mesh units | Resampling step for **both** clouds, so a denser mesh cannot buy a better score. Smaller = more points, slower, more memory. |
-| `evaluation.max_dist` | mesh units | Distances above this are dropped from the Chamfer average, bounding gross outliers. **Its cost is reported as `coverage`** — if coverage is low, `max_dist` is doing too much work and the Chamfer is not meaningful. |
-| `evaluation.fscore_thresholds` | mesh units | The reporting grid. `precision`/`recall`/`fscore` are index-aligned with `thresholds`. |
+| `evaluation.max_dist` | mesh units | Distances above this are dropped from the Chamfer average, bounding gross outliers. **Chamfer only** — it does not touch precision/recall/F-score, which are fractions of the full point sets. **Its cost is reported as `coverage`** — if coverage is low, `max_dist` is doing too much work and the Chamfer is not meaningful. |
+| `evaluation.fscore_thresholds` | mesh units | The reporting grid. `precision`/`recall`/`fscore` are index-aligned with `thresholds`. Independent of `max_dist`, so a threshold above it is meaningful rather than saturated at `1.0`. |
 | `cleanup.dilation_radius` | **pixels** | Silhouette dilation before carving reconstructed vertices that project outside every mask. Larger = more forgiving at the border. `12` for both datasets here. |
 | `cleanup.z_threshold` | mesh units | Drops reconstructed points below this height (support plane). `null` disables. |
 | `dataset.num_views` | — | Camera views used for masking and visibility. |
@@ -201,15 +213,15 @@ cloud came from, the sampling density and the resulting count.
 | `n_kept_a2b` / `n_kept_b2a` | point counts behind each Chamfer. |
 | `n_filtered_a2b` / `n_filtered_b2a` | points dropped by `max_dist`. |
 | `thresholds` | reporting grid, echoing `evaluation.fscore_thresholds`. |
-| `precision`, `recall`, `fscore` | arrays index-aligned with `thresholds`. All `NaN` if either cloud is empty. |
+| `precision`, `recall`, `fscore` | arrays index-aligned with `thresholds`, computed over the **full** point sets — `max_dist` is not applied here, so a far outlier counts as a miss rather than disappearing from the denominator. All `NaN` if either cloud is empty. |
 | `n_gt_points` / `n_data_points` | cloud sizes after resampling and masking. |
 | `exclude_masks` | the mask files actually applied, by name. |
-| `max_dist` | the value used, echoed so the file is self-describing. |
+| `max_dist` | the value used for the Chamfer clipping, echoed so the file is self-describing. |
 | `seed` | resampling seed (42). |
 
-**`NaN` is a result, not a crash.** It means the cell produced nothing measurable at this
-`max_dist`, and it is deliberately not `0.0` so it cannot be averaged into a ranking as though
-it were perfect.
+**`NaN` is a result, not a crash.** It means the cell produced nothing measurable — no point
+survived `max_dist` for the Chamfer, or a cloud was empty for the curves — and it is
+deliberately not `0.0` so it cannot be averaged into a ranking as though it were perfect.
 
 Dense curves live in `eval_results/curves/` as four aligned arrays (`thresholds`, `precision`,
 `recall`, `fscore`), independent of the coarse reporting grid.

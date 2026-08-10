@@ -56,7 +56,6 @@ def aggregate_global(
         curves = compute_fscore_curve(
             data2gt, gt2data,
             config.evaluation.fscore_thresholds,
-            config.evaluation.max_dist,
         )
 
         results[method] = {

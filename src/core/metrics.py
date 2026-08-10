@@ -95,7 +95,6 @@ def compute_fscore_curve(
     dist_a2b: np.ndarray,
     dist_b2a: np.ndarray,
     thresholds: list[float] | np.ndarray,
-    max_dist: float | None = None,
 ) -> dict:
     """Compute precision, recall, and F-score at multiple thresholds.
 
@@ -103,11 +102,20 @@ def compute_fscore_curve(
     - Recall: proportion of GT points within threshold of reconstruction
     - F-score: harmonic mean of precision and recall
 
+    No `max_dist` outlier filtering is applied here, unlike `compute_chamfer`.
+    Precision and recall are *defined* as a fraction of the full point set, so
+    dropping far points shrinks the denominator while leaving the numerator
+    untouched (a point at d >= max_dist could never satisfy d < t for
+    t <= max_dist anyway). Filtering therefore returned
+    `precision_true / coverage_a2b` — a systematic overestimate, worst exactly
+    where the reconstruction was worst. Where a threshold reached max_dist it
+    was worse still: every surviving point counted, pinning precision, recall
+    and F-score to 1.0 by construction.
+
     Args:
         dist_a2b: Distances from reconstruction (A) to GT (B), shape (N,).
         dist_b2a: Distances from GT (B) to reconstruction (A), shape (M,).
         thresholds: List of distance thresholds.
-        max_dist: Optional max distance for outlier filtering.
 
     Returns:
         Dictionary with:
@@ -118,10 +126,6 @@ def compute_fscore_curve(
     """
     thresholds = np.asarray(thresholds, dtype=np.float32)
 
-    if max_dist is not None:
-        dist_a2b = dist_a2b[dist_a2b < max_dist]
-        dist_b2a = dist_b2a[dist_b2a < max_dist]
-
     n_a = len(dist_a2b)
     n_b = len(dist_b2a)
 
@@ -129,10 +133,10 @@ def compute_fscore_curve(
     recall = np.zeros(len(thresholds), dtype=np.float32)
     fscore = np.zeros(len(thresholds), dtype=np.float32)
 
-    # An empty filtered set means "not one point survived max_dist", which is a failure,
-    # not a score of 0 on a well-defined denominator. NaN keeps it out of any mean and
-    # out of any "best value" ranking. Note this is distinct from a legitimate 0.0,
-    # which happens when points exist but none fall under threshold t.
+    # An empty input means there is no denominator to divide by at all, which is a
+    # failure, not a score of 0 on a well-defined denominator. NaN keeps it out of any
+    # mean and out of any "best value" ranking. Note this is distinct from a legitimate
+    # 0.0, which happens when points exist but none fall under threshold t.
     if n_a == 0 or n_b == 0:
         precision[:] = np.nan
         recall[:] = np.nan
@@ -177,13 +181,15 @@ def compute_metrics(
         dist_data2gt: Distances from data to GT, shape (N,).
         dist_gt2data: Distances from GT to data, shape (M,).
         thresholds: F-score thresholds.
-        max_dist: Max distance for outlier filtering.
+        max_dist: Max distance for outlier filtering. Applies to the Chamfer
+            distance only — precision/recall/F-score always use the full point
+            sets, see `compute_fscore_curve`.
 
     Returns:
         Dictionary with all metrics.
     """
     chamfer = compute_chamfer(dist_data2gt, dist_gt2data, max_dist)
-    curves = compute_fscore_curve(dist_data2gt, dist_gt2data, thresholds, max_dist)
+    curves = compute_fscore_curve(dist_data2gt, dist_gt2data, thresholds)
 
     return {
         **chamfer,
