@@ -67,6 +67,14 @@ class EvaluationConfig(BaseModel):
     downsample_density: float = Field(default=0.05, gt=0, description="Point sampling density")
     max_dist: float = Field(default=2.0, gt=0, description="Max distance for filtering outliers")
     curvature_radius: Optional[float] = Field(default=None, description="Radius for curvature estimation (None = auto)")
+    sampling_seed: int = Field(
+        default=42,
+        description=(
+            "Random seed for reproducible GT point-cloud sampling (the shuffle inside "
+            "downsample_pcd). Kept at 42 to match the reconstruction-side seed used in "
+            "pipeline/evaluate.py, so GT and data clouds are drawn under the same seed."
+        ),
+    )
     fscore_thresholds: list[float] = Field(
         default_factory=lambda: [0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5],
         description="Thresholds for F-score curve"
