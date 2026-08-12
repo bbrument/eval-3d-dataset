@@ -1,5 +1,24 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+- **`max_dist` no longer applied to precision/recall/F-score.** `compute_fscore_curve` dropped
+  every distance above `evaluation.max_dist` before counting, shrinking only the denominator
+  (`n_a`/`n_b`) while the numerator was unaffected — so every reported value was the true value
+  divided by coverage (`precision/coverage_a2b`, `recall/coverage_b2a`), a systematic
+  overestimate largest exactly where the reconstruction was worst. `max_dist` is always active
+  in practice (default `2.0`), so this affected evaluate, recompute, curves and aggregate.
+  **Output change:** precision/recall/F-score now decrease (toward their true values) wherever
+  coverage is below 1.
+- **Reproducible GT point-cloud sampling.** `preprocess_gt` called `downsample_pcd` without
+  a seed, so its internal shuffle drew from `np.random.default_rng(None)` (OS entropy) and two
+  runs on the same mesh produced `gt_pcd.npy` clouds drifting by ~0.04%. The seed is now
+  configurable via `evaluation.sampling_seed` (default `42`, matching the reconstruction-side
+  seed in `pipeline/evaluate.py`) and recorded in `gt_pcd_provenance.json`. Already-generated
+  clouds are not rewritten; the first regeneration under the default seed will differ by ~0.04%
+  from the on-disk cloud (drawn under an unrecorded seed). Expected and harmless.
+
 ## Why your earlier numbers may not match
 
 This is the first public release. It is **not** the first working version: the pipeline was

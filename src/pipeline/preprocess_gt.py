@@ -172,8 +172,16 @@ def preprocess_gt(
         )
         print(f"  Upsampled to {len(pcd)} points")
 
-        print(f"  Downsampling point cloud")
-        gt_pcd = downsample_pcd(pcd, config.evaluation.downsample_density)
+        # Pass an explicit seed so the shuffle inside downsample_pcd is reproducible.
+        # Without it, downsample_pcd falls back to np.random.default_rng(None), which is
+        # seeded from OS entropy: two runs on the same mesh shuffled differently and the
+        # greedy radius selection then kept a slightly different subset (~0.04% drift).
+        print(f"  Downsampling point cloud (seed={config.evaluation.sampling_seed})")
+        gt_pcd = downsample_pcd(
+            pcd,
+            config.evaluation.downsample_density,
+            seed=config.evaluation.sampling_seed,
+        )
         print(f"  Downsampled to {len(gt_pcd)} points")
 
         gt_dir.mkdir(parents=True, exist_ok=True)
@@ -206,6 +214,7 @@ def preprocess_gt(
             "use_masks": bool(config.cleanup.use_masks),
             "dilation_radius": int(config.cleanup.dilation_radius),
             "density": float(config.evaluation.downsample_density),
+            "sampling_seed": int(config.evaluation.sampling_seed),
             "written": _dt.now().isoformat(timespec="seconds"),
         }
         with open(gt_dir / "gt_pcd_provenance.json", "w") as _f:
