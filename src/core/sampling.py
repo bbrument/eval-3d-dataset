@@ -166,3 +166,20 @@ def downsample_pcd(pcd: np.ndarray, density: float, shuffle: bool = True, seed: 
             mask[curr] = True
 
     return pcd[mask].astype(np.float32)
+
+
+def remove_nan_points(points: np.ndarray) -> np.ndarray:
+    """Drop points with any NaN coordinate (numerical hygiene only).
+
+    This is *not* a height cut: every finite point is kept regardless of its
+    z value. Points below the ground-truth floor are preserved on purpose so
+    they still contribute to the distance/F-score metrics.
+
+    Args:
+        points: Point cloud, shape (N, 3).
+
+    Returns:
+        Point cloud with NaN rows removed, order otherwise preserved.
+    """
+    finite_mask = ~np.isnan(points).any(axis=1)
+    return points[finite_mask]

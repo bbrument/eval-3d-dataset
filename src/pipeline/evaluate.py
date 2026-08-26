@@ -7,7 +7,7 @@ import numpy as np
 
 from ..config import Config
 from ..core.mesh import load_mesh
-from ..core.sampling import upsample_mesh, downsample_pcd
+from ..core.sampling import upsample_mesh, downsample_pcd, remove_nan_points
 from ..core.metrics import compute_distances, compute_metrics
 from ..core.masking import load_gt_exclude, apply_exclude
 import cv2
@@ -71,13 +71,11 @@ def evaluate(
     data_pcd = upsample_mesh(data_mesh.vertices, data_mesh.faces, density)
     print(f"  Upsampled to {len(data_pcd)} points")
 
-    gt_min_z = gt_pcd[:, 2].min()
-    z_mask = data_pcd[:, 2] > gt_min_z
-    data_pcd = data_pcd[z_mask]
-    print(f"  After z-filter: {len(data_pcd)} points")
-
-    nan_mask = ~np.isnan(data_pcd).any(axis=1)
-    data_pcd = data_pcd[nan_mask]
+    # Numerical hygiene only: drop NaN points. No relative height cut is
+    # applied any more, so reconstructed points below the GT floor (bases,
+    # tables, ...) are kept and count in the distance/F-score metrics.
+    data_pcd = remove_nan_points(data_pcd)
+    print(f"  After NaN removal: {len(data_pcd)} points")
 
     print(f"  Downsampling data point cloud")
     data_down = downsample_pcd(data_pcd, density, shuffle=True, seed=seed)
