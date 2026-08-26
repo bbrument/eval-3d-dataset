@@ -37,6 +37,7 @@ paths:
 cleanup:
   dilation_radius: 12
   use_masks: true
+  z_threshold: null   # no absolute height cut for Skoltech3D (kept only for DiLiGenT-MV)
 
 evaluation:
   downsample_density: 0.0001    # 0.1mm in meters

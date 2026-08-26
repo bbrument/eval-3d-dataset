@@ -35,7 +35,7 @@ paths:
 cleanup:
   dilation_radius: 12
   ray_offset_factor: 0.01
-  z_threshold: 5
+  z_threshold: null   # no absolute height cut for Skoltech3D (kept only for DiLiGenT-MV)
 
 evaluation:
   # IN MILLIMETRES (see the units note above).
