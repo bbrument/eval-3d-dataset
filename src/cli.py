@@ -343,10 +343,12 @@ def aggregate(ctx, visibility_groups, curvature_thresholds):
               help="Margin around bbox when cropping (pixels)")
 @click.option("--exclude-mode", default=None, type=click.Choice(["none", "gray", "remove"]),
               help="How to handle excluded regions (default: from config)")
+@click.option("--integrated-colorbar/--no-integrated-colorbar", "integrated_colorbar", default=None,
+              help="Composite the lateral colorbar onto each view (view_XXX_cb.png) instead of a standalone colorbar.png (default: from config)")
 @click.option("--force", "-f", is_flag=True,
               help="Overwrite existing files")
 @click.pass_context
-def visualize(ctx, object_name, method_name, metrics, views, scale, cmap, max_dist, crop, crop_margin, exclude_mode, force):
+def visualize(ctx, object_name, method_name, metrics, views, scale, cmap, max_dist, crop, crop_margin, exclude_mode, integrated_colorbar, force):
     """Generate metric visualization renders."""
     from .core.rendering import PYRENDER_AVAILABLE
     from .pipeline.visualize import visualize_method
@@ -398,6 +400,7 @@ def visualize(ctx, object_name, method_name, metrics, views, scale, cmap, max_di
                     max_dist=max_dist,
                     force=force,
                     exclude_mode=exclude_mode,
+                    integrated_colorbar=integrated_colorbar,
                 )
             except FileNotFoundError as e:
                 click.echo(f"Skipping {obj}/{method}: {e}")

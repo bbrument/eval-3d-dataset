@@ -49,13 +49,21 @@ class PathsConfig(BaseModel):
 class CleanupConfig(BaseModel):
     """Mesh cleanup configuration."""
 
-    dilation_radius: int = Field(default=12, description="Mask dilation radius in pixels")
+    dilation_radius: int | str = Field(default=12, description="Mask dilation radius in pixels (fixed int), or 'auto' to scale it with each mask's resolution (see dilation_ref_px / dilation_ref_n_pixels)")
+    dilation_ref_px: int = Field(default=48, ge=0, description="Auto-dilation reference radius: pixels of dilation at the reference resolution (dilation_ref_n_pixels)")
+    dilation_ref_n_pixels: int = Field(default=9568 * 6376, gt=0, description="Auto-dilation reference resolution in total pixels (H*W). Default = 9568x6376 (Martine full res). Auto radius = round(dilation_ref_px * sqrt(mask_n_pixels / dilation_ref_n_pixels))")
     z_threshold: Optional[float] = Field(default=None, description="Remove points below this z")
     use_masks: bool = Field(default=True, description="Use 2D masks for visibility filtering")
+    watertight_culling: bool = Field(default=False, description="Robin's mask-based culling: remove visible, front-facing vertices that project into the per-view watertight-issue masks (surfaces filling the GT holes). Requires <GT>/masks_issue_watertight/.")
+    watertight_orientation_ratio: float = Field(default=0.7, description="If < this fraction of sampled visible points face camera 0, flip normals before watertight_culling")
 
     @field_validator("dilation_radius")
     @classmethod
-    def validate_dilation_radius(cls, v: int) -> int:
+    def validate_dilation_radius(cls, v: int | str) -> int | str:
+        if isinstance(v, str):
+            if v != "auto":
+                raise ValueError('dilation_radius string must be "auto"')
+            return v
         if v < 0:
             raise ValueError("dilation_radius must be >= 0")
         return v
@@ -158,6 +166,7 @@ class VisualizationConfig(BaseModel):
     crop_margin: int = Field(default=20, ge=0, description="Margin around bbox when cropping")
     min_component_size: int = Field(default=100, ge=0, description="Min component size for cropping noise removal")
     exclude_mode: str = Field(default="gray", description="How to handle excluded regions: 'none', 'gray', or 'remove'")
+    integrated_colorbar: bool = Field(default=False, description="Composite the lateral colorbar directly onto each rendered view (view_XXX_cb.png) instead of saving a standalone colorbar.png")
     decimation_target: int = Field(default=1_000_000, ge=0, description="Max number of faces for visualization (decimate if exceeded)")
     colormaps: dict[str, str] = Field(
         default_factory=lambda: {
@@ -239,6 +248,15 @@ class Config(BaseModel):
     def get_gt_dir(self, object_name: str) -> Path:
         """Get the groundtruth directory in eval_root."""
         return self.get_eval_root(object_name) / "Groundtruth"
+
+    def get_masks_issue_watertight_dir(self, object_name: str) -> Path:
+        """Get the watertight-issue masks directory (per-view hole-region masks).
+
+        Ported from Robin's pipeline: if this directory exists and
+        ``cleanup.watertight_culling`` is on, cleanup additionally removes
+        reconstruction vertices that *fill in* the non-watertight holes of the GT.
+        """
+        return self.get_gt_dir(object_name) / "masks_issue_watertight"
 
     def get_gt_mesh_path(self, object_name: str, cleaned: bool = False) -> Path:
         """Get the GT mesh path by searching for .ply files in Groundtruth directory.

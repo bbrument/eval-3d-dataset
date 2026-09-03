@@ -7,7 +7,7 @@ import numpy as np
 from ..config import Config
 from ..core.camera import load_cameras_auto
 from ..core.mesh import load_mesh, save_mesh, filter_mesh_by_vertex_mask
-from ..core.visibility import filter_by_visibility
+from ..core.visibility import filter_by_visibility, filter_by_issue_watertight
 
 
 def cleanup_mesh(
@@ -78,14 +78,44 @@ def cleanup_mesh(
         dilation_radius=config.cleanup.dilation_radius,
         show_progress=True,
         use_masks=config.cleanup.use_masks,
+        dilation_ref_px=config.cleanup.dilation_ref_px,
+        dilation_ref_n_pixels=config.cleanup.dilation_ref_n_pixels,
     )
 
-    n_visible = np.sum(visible_mask)
-    n_removed = len(mesh.vertices) - n_visible
-    print(f"  Visible vertices: {n_visible} ({100*n_visible/len(mesh.vertices):.1f}%)")
-    print(f"  Removed vertices: {n_removed}")
+    keep_mask = visible_mask
+    n_visible = int(np.sum(visible_mask))
 
-    cleaned_mesh = filter_mesh_by_vertex_mask(mesh, visible_mask)
+    # Robin's watertight culling: additionally drop visible, front-facing vertices that
+    # project into the per-view hole-region masks (surfaces filling the GT's non-watertight
+    # holes). Gated on cleanup.watertight_culling AND the masks dir existing (fail-open to
+    # a plain clean if the masks are absent, but log it loudly).
+    if config.cleanup.watertight_culling:
+        issue_dir = config.get_masks_issue_watertight_dir(object_name)
+        if issue_dir.exists() and any(issue_dir.glob("*.png")):
+            print(f"  Watertight culling using: {issue_dir}")
+            issue_counts = filter_by_issue_watertight(
+                mesh.vertices,
+                mesh,
+                cameras,
+                issue_dir,
+                visible_mask=visible_mask,
+                orientation_ratio_threshold=config.cleanup.watertight_orientation_ratio,
+                show_progress=True,
+            )
+            keep_mask = visible_mask & (issue_counts == 0)
+            n_culled = n_visible - int(np.sum(keep_mask))
+            pct = (100.0 * n_culled / n_visible) if n_visible else 0.0
+            print(f"  Watertight culling removed {n_culled} extra vertices "
+                  f"({pct:.2f}% of the {n_visible} visible)")
+        else:
+            print(f"  WARNING: watertight_culling=True but no issue masks at {issue_dir} - skipping cull")
+
+    n_kept = int(np.sum(keep_mask))
+    n_removed = len(mesh.vertices) - n_kept
+    print(f"  Visible vertices: {n_visible} ({100*n_visible/len(mesh.vertices):.1f}%)")
+    print(f"  Kept after culling: {n_kept}  |  Removed total: {n_removed}")
+
+    cleaned_mesh = filter_mesh_by_vertex_mask(mesh, keep_mask)
     print(f"  Cleaned mesh: {len(cleaned_mesh.vertices)} vertices, {len(cleaned_mesh.faces)} faces")
 
     cleaned_mesh_path.parent.mkdir(parents=True, exist_ok=True)
