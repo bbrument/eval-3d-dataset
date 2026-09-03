@@ -52,6 +52,8 @@ class CleanupConfig(BaseModel):
     dilation_radius: int = Field(default=12, description="Mask dilation radius in pixels")
     z_threshold: Optional[float] = Field(default=None, description="Remove points below this z")
     use_masks: bool = Field(default=True, description="Use 2D masks for visibility filtering")
+    watertight_culling: bool = Field(default=False, description="Robin's mask-based culling: remove visible, front-facing vertices that project into the per-view watertight-issue masks (surfaces filling the GT holes). Requires <GT>/masks_issue_watertight/.")
+    watertight_orientation_ratio: float = Field(default=0.7, description="If < this fraction of sampled visible points face camera 0, flip normals before watertight_culling")
 
     @field_validator("dilation_radius")
     @classmethod
@@ -239,6 +241,15 @@ class Config(BaseModel):
     def get_gt_dir(self, object_name: str) -> Path:
         """Get the groundtruth directory in eval_root."""
         return self.get_eval_root(object_name) / "Groundtruth"
+
+    def get_masks_issue_watertight_dir(self, object_name: str) -> Path:
+        """Get the watertight-issue masks directory (per-view hole-region masks).
+
+        Ported from Robin's pipeline: if this directory exists and
+        ``cleanup.watertight_culling`` is on, cleanup additionally removes
+        reconstruction vertices that *fill in* the non-watertight holes of the GT.
+        """
+        return self.get_gt_dir(object_name) / "masks_issue_watertight"
 
     def get_gt_mesh_path(self, object_name: str, cleaned: bool = False) -> Path:
         """Get the GT mesh path by searching for .ply files in Groundtruth directory.
