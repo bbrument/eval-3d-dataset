@@ -160,6 +160,7 @@ class VisualizationConfig(BaseModel):
     crop_margin: int = Field(default=20, ge=0, description="Margin around bbox when cropping")
     min_component_size: int = Field(default=100, ge=0, description="Min component size for cropping noise removal")
     exclude_mode: str = Field(default="gray", description="How to handle excluded regions: 'none', 'gray', or 'remove'")
+    integrated_colorbar: bool = Field(default=False, description="Composite the lateral colorbar directly onto each rendered view (view_XXX_cb.png) instead of saving a standalone colorbar.png")
     decimation_target: int = Field(default=1_000_000, ge=0, description="Max number of faces for visualization (decimate if exceeded)")
     colormaps: dict[str, str] = Field(
         default_factory=lambda: {

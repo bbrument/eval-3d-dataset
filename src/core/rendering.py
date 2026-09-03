@@ -153,6 +153,7 @@ def add_colorbar(
     cmap: str,
     label: str,
     position: str = "right",
+    reserve_label_space: bool = False,
 ) -> np.ndarray:
     """Add matplotlib colorbar to an image.
 
@@ -162,6 +163,10 @@ def add_colorbar(
         cmap: Matplotlib colormap name
         label: Colorbar label with units
         position: "right" or "bottom"
+        reserve_label_space: (position="right" only) Use an absolute-inch layout that
+            keeps the colorbar bar thin and reserves fixed room for the tick labels and
+            axis label, so they are never clipped on wide images. Default False keeps the
+            original proportional layout byte-for-byte (used by the standalone colorbar.png).
 
     Returns:
         Image with colorbar added (H, W', 3) or (H', W, 3)
@@ -169,7 +174,21 @@ def add_colorbar(
     h, w = image.shape[:2]
 
     # Create figure with image and colorbar
-    if position == "right":
+    if position == "right" and reserve_label_space:
+        # Absolute-inch layout: image + gap + thin bar + fixed label strip. Because the
+        # bar width and label strip are fixed in inches (not fractions of w), the tick
+        # labels stay readable regardless of how wide the rendered view is.
+        gap_in, bar_in, label_in = 0.12, 0.22, 1.05
+        fig_width = w / 100 + gap_in + bar_in + label_in
+        fig_height = h / 100
+        fig = Figure(figsize=(fig_width, fig_height), dpi=100)
+
+        ax_img = fig.add_axes([0, 0, (w / 100) / fig_width, 1])
+        ax_img.imshow(image)
+        ax_img.axis("off")
+
+        ax_cb = fig.add_axes([(w / 100 + gap_in) / fig_width, 0.1, bar_in / fig_width, 0.8])
+    elif position == "right":
         fig_width = w / 100 + 0.8  # Extra space for colorbar
         fig_height = h / 100
         fig = Figure(figsize=(fig_width, fig_height), dpi=100)

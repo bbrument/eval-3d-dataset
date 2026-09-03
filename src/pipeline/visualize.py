@@ -52,6 +52,8 @@ def visualize_method(
     force: bool = False,
     decimation_target: int = 10_000_000,
     exclude_mode: str | None = None,
+    integrated_colorbar: bool | None = None,
+    excluded_override_path: Path | None = None,
 ) -> dict[str, list[Path]]:
     """Generate all visualization renders for a method.
 
@@ -74,6 +76,14 @@ def visualize_method(
         force: Overwrite existing files
         decimation_target: Max number of faces for visualization (decimate if exceeded)
         exclude_mode: How to handle excluded regions: 'none', 'gray', 'remove' (None = use config)
+        integrated_colorbar: If True, composite the lateral colorbar onto each rendered
+            view and save it as view_XXX_cb.png (in addition to the raw view_XXX.png).
+            If False (default), keep the current behavior of saving a standalone
+            colorbar.png. None = use config (visualization.integrated_colorbar).
+        excluded_override_path: Optional path to a boolean .npy exclusion mask (indexed
+            like gt_pcd, True = excluded) to load INSTEAD of challenges/excluded.npy.
+            Only the source of the mask changes; the coloring logic (gray for excluded,
+            max_dist cap) is untouched.
 
     Returns:
         Dict mapping metric name to list of generated image paths
@@ -94,6 +104,8 @@ def visualize_method(
 
     if exclude_mode is None:
         exclude_mode = config.visualization.exclude_mode
+    if integrated_colorbar is None:
+        integrated_colorbar = config.visualization.integrated_colorbar
 
     vis_suffix = "visualizations_remove" if exclude_mode == "remove" else "visualizations"
     vis_dir = method_dir / vis_suffix
@@ -145,8 +157,12 @@ def visualize_method(
     gt_pcd_path = gt_dir / "gt_pcd.npy"
     gt_pcd = np.load(gt_pcd_path) if gt_pcd_path.exists() else None
 
-    # Load and apply exclusion mask according to exclude_mode
-    excluded_npy_path = gt_dir / "challenges" / "excluded.npy"
+    # Load and apply exclusion mask according to exclude_mode.
+    # excluded_override_path lets a caller substitute a different boolean mask for the
+    # default challenges/excluded.npy. Only the SOURCE of the mask changes here; the
+    # downstream coloring (gray + max_dist cap) is untouched.
+    excluded_npy_path = Path(excluded_override_path) if excluded_override_path is not None \
+        else gt_dir / "challenges" / "excluded.npy"
     gt_excluded_mask = None
     method_excluded_mask = None
 
@@ -446,18 +462,36 @@ def visualize_method(
 
         # Generate and save colorbar if needed
         if colorbar_params is not None:
-            dummy = np.full((100, 100, 3), 255, dtype=np.uint8)
-            with_cb = add_colorbar(
-                dummy,
-                colorbar_params["vmin"],
-                colorbar_params["vmax"],
-                colorbar_params["cmap"],
-                colorbar_params["label"],
-            )
-            colorbar_img = with_cb[:, 100:]
-            cb_path = output_dir / "colorbar.png"
-            Image.fromarray(colorbar_img).save(cb_path)
-            print(f"    Saved colorbar to {cb_path}")
+            if integrated_colorbar:
+                # Composite the lateral colorbar directly onto each rendered view
+                # (view_XXX_cb.png), reserving fixed label space so wide views don't clip.
+                for view_path in paths:
+                    view_img = np.array(Image.open(view_path).convert("RGB"))
+                    composite = add_colorbar(
+                        view_img,
+                        colorbar_params["vmin"],
+                        colorbar_params["vmax"],
+                        colorbar_params["cmap"],
+                        colorbar_params["label"],
+                        position="right",
+                        reserve_label_space=True,
+                    )
+                    cb_view_path = view_path.with_name(f"{view_path.stem}_cb.png")
+                    Image.fromarray(composite).save(cb_view_path)
+                print(f"    Saved {len(paths)} integrated-colorbar views (*_cb.png)")
+            else:
+                dummy = np.full((100, 100, 3), 255, dtype=np.uint8)
+                with_cb = add_colorbar(
+                    dummy,
+                    colorbar_params["vmin"],
+                    colorbar_params["vmax"],
+                    colorbar_params["cmap"],
+                    colorbar_params["label"],
+                )
+                colorbar_img = with_cb[:, 100:]
+                cb_path = output_dir / "colorbar.png"
+                Image.fromarray(colorbar_img).save(cb_path)
+                print(f"    Saved colorbar to {cb_path}")
 
         results[metric] = paths
         print(f"    Generated {len(paths)} images")
