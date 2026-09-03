@@ -78,6 +78,8 @@ def cleanup_mesh(
         dilation_radius=config.cleanup.dilation_radius,
         show_progress=True,
         use_masks=config.cleanup.use_masks,
+        dilation_ref_px=config.cleanup.dilation_ref_px,
+        dilation_ref_n_pixels=config.cleanup.dilation_ref_n_pixels,
     )
 
     keep_mask = visible_mask

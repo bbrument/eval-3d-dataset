@@ -43,6 +43,41 @@ def create_dilation_kernel(radius: int) -> np.ndarray:
     return cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (diameter, diameter))
 
 
+# Default reference resolution for auto-dilation: Martine full resolution (9568 x 6376).
+AUTO_DILATION_REF_PX = 48
+AUTO_DILATION_REF_N_PIXELS = 9568 * 6376
+
+
+def compute_auto_dilation(
+    mask_n_pixels: int,
+    ref_px: int = AUTO_DILATION_REF_PX,
+    ref_n_pixels: int = AUTO_DILATION_REF_N_PIXELS,
+) -> int:
+    """Resolution-adaptive dilation radius for a mask.
+
+    The dilation scales with the linear size of the mask (i.e. with the square root of
+    its pixel count), so that a mask holds the same *physical* silhouette margin at any
+    resolution. Calibrated by a reference point: ``ref_px`` pixels of dilation at a mask
+    of ``ref_n_pixels`` total pixels (default 48 px at 9568x6376, Martine full res).
+
+        dilation = round(ref_px * sqrt(mask_n_pixels / ref_n_pixels))
+
+    With the default reference this gives 48 at full res, 24 at /2, 12 at /4, 6 at /8, and
+    proportional values in between.
+
+    Args:
+        mask_n_pixels: Total number of pixels in the mask image (H * W).
+        ref_px: Dilation radius (pixels) at the reference resolution.
+        ref_n_pixels: Reference resolution as a total pixel count (H * W).
+
+    Returns:
+        Non-negative integer dilation radius (0 if inputs are non-positive).
+    """
+    if mask_n_pixels <= 0 or ref_n_pixels <= 0 or ref_px <= 0:
+        return 0
+    return int(round(ref_px * np.sqrt(mask_n_pixels / ref_n_pixels)))
+
+
 def ray_visibility_check(
     points: np.ndarray,
     mesh: trimesh.Trimesh,
@@ -242,13 +277,15 @@ def filter_by_visibility(
     mesh: trimesh.Trimesh,
     cameras: dict,
     masks_dir: str | Path,
-    dilation_radius: int = 12,
+    dilation_radius: int | str = 12,
     show_progress: bool = True,
     use_masks: bool = True,
+    dilation_ref_px: int = AUTO_DILATION_REF_PX,
+    dilation_ref_n_pixels: int = AUTO_DILATION_REF_N_PIXELS,
 ) -> np.ndarray:
     """Create a vertex mask keeping only vertices visible from at least one view.
 
-    Uses strict mask filtering if use_masks=True: if a vertex projects inside a view's 
+    Uses strict mask filtering if use_masks=True: if a vertex projects inside a view's
     image bounds but outside the mask, it is removed.
     Otherwise (use_masks=False), it only checks for occlusion and camera bounds.
 
@@ -257,9 +294,13 @@ def filter_by_visibility(
         mesh: Mesh for occlusion testing.
         cameras: Camera dict.
         masks_dir: Masks directory.
-        dilation_radius: Mask dilation radius.
+        dilation_radius: Mask dilation radius in pixels (fixed int >= 0), or the string
+            "auto" to derive a per-mask radius from its resolution via
+            :func:`compute_auto_dilation` (dilation_ref_px / dilation_ref_n_pixels).
         show_progress: Show progress bar.
         use_masks: Whether to use 2D masks for filtering.
+        dilation_ref_px: Auto-dilation reference radius (pixels at the reference res).
+        dilation_ref_n_pixels: Auto-dilation reference resolution (total pixels).
 
     Returns:
         Boolean mask, True for visible vertices, shape (N,).
@@ -269,10 +310,15 @@ def filter_by_visibility(
     camera_centers = get_camera_centers(cameras["Rt"])
     n_vertices = len(vertices)
 
+    # Dilation radius: fixed int, or per-mask "auto" scaling with each mask's resolution.
+    auto_dilation = isinstance(dilation_radius, str) and dilation_radius == "auto"
+    fixed_kernel = None
+    if not auto_dilation:
+        fixed_kernel = create_dilation_kernel(dilation_radius) if dilation_radius > 0 else None
+
     # Pre-load and dilate all masks
     masks = []
     image_shapes = []
-    kernel = create_dilation_kernel(dilation_radius) if dilation_radius > 0 else None
 
     mask_names = cameras.get("mask_names")
     for view_idx in range(n_views):
@@ -286,11 +332,19 @@ def filter_by_visibility(
                 if p.exists():
                     mask_path = p
                     break
-        
+
         if mask_path and mask_path.exists():
             mask = load_mask(mask_path)
             image_shapes.append(mask.shape)
             if use_masks:
+                if auto_dilation:
+                    radius = compute_auto_dilation(mask.size, dilation_ref_px, dilation_ref_n_pixels)
+                    kernel = create_dilation_kernel(radius) if radius > 0 else None
+                    if show_progress and view_idx == 0:
+                        print(f"    Auto-dilation: {radius}px for {mask.shape[1]}x{mask.shape[0]} masks "
+                              f"(ref {dilation_ref_px}px @ {dilation_ref_n_pixels}px)")
+                else:
+                    kernel = fixed_kernel
                 if kernel is not None:
                     mask = cv2.dilate(mask.astype(np.uint8), kernel, iterations=1).astype(bool)
                 masks.append(mask)

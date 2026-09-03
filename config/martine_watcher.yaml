@@ -39,7 +39,11 @@ paths:
   eval_root: "/projects/m25115/eval_3d_datasets/eccv_dataset/eval/{object}"
 
 cleanup:
-  dilation_radius: 30
+  # Resolution-adaptive dilation (48px @ full res 9568x6376, scaled per mask).
+  # Inert while use_masks is false, but keeps the Martine default coherent.
+  dilation_radius: auto
+  dilation_ref_px: 48
+  dilation_ref_n_pixels: 61005568  # 9568 * 6376
   use_masks: false
 
 evaluation:

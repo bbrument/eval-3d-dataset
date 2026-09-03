@@ -49,7 +49,9 @@ class PathsConfig(BaseModel):
 class CleanupConfig(BaseModel):
     """Mesh cleanup configuration."""
 
-    dilation_radius: int = Field(default=12, description="Mask dilation radius in pixels")
+    dilation_radius: int | str = Field(default=12, description="Mask dilation radius in pixels (fixed int), or 'auto' to scale it with each mask's resolution (see dilation_ref_px / dilation_ref_n_pixels)")
+    dilation_ref_px: int = Field(default=48, ge=0, description="Auto-dilation reference radius: pixels of dilation at the reference resolution (dilation_ref_n_pixels)")
+    dilation_ref_n_pixels: int = Field(default=9568 * 6376, gt=0, description="Auto-dilation reference resolution in total pixels (H*W). Default = 9568x6376 (Martine full res). Auto radius = round(dilation_ref_px * sqrt(mask_n_pixels / dilation_ref_n_pixels))")
     z_threshold: Optional[float] = Field(default=None, description="Remove points below this z")
     use_masks: bool = Field(default=True, description="Use 2D masks for visibility filtering")
     watertight_culling: bool = Field(default=False, description="Robin's mask-based culling: remove visible, front-facing vertices that project into the per-view watertight-issue masks (surfaces filling the GT holes). Requires <GT>/masks_issue_watertight/.")
@@ -57,7 +59,11 @@ class CleanupConfig(BaseModel):
 
     @field_validator("dilation_radius")
     @classmethod
-    def validate_dilation_radius(cls, v: int) -> int:
+    def validate_dilation_radius(cls, v: int | str) -> int | str:
+        if isinstance(v, str):
+            if v != "auto":
+                raise ValueError('dilation_radius string must be "auto"')
+            return v
         if v < 0:
             raise ValueError("dilation_radius must be >= 0")
         return v
