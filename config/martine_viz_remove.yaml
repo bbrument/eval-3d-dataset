@@ -36,8 +36,8 @@ visualization:
   crop: true
   crop_margin: 15
   colormaps:
-    accuracy: jet
-    completeness: jet
+    accuracy: viridis
+    completeness: viridis
     visibility: viridis
     curvature: coolwarm
   max_dist: 4.0
