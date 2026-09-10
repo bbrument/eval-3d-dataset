@@ -37,6 +37,48 @@ recorded in `metrics["exclude_masks"]`, so a result file states what was done ra
 was supposed to be done. Extra masks can be requested per run with `--extra-exclude <name>` on
 `curves` and `recompute`.
 
+## Data-to-GT alignment (optional)
+
+Everything above assumes the reconstruction is already expressed in the ground-truth frame,
+at the ground-truth scale. That holds for pipelines that reconstruct from the dataset's
+calibrated cameras. It does **not** hold for feed-forward models such as VGGT, whose pointmaps
+live in the first camera's frame at an arbitrary scale — evaluated as-is they score `NaN` or
+near-zero coverage.
+
+```yaml
+alignment:
+  enabled: true          # default false: nothing below runs, numbers are unchanged
+  mode: sim3             # sim3 = rotation + translation + scale; se3 = no scale
+  init: centroid         # centroid | cameras | null
+  cameras_src: null      # init: cameras — camera file of the reconstruction ({object}/{method} ok)
+  cameras_dst: null      # init: cameras — GT-frame cameras (default: paths.data_root cameras)
+```
+
+`eval-pipeline -c $CFG evaluate --align` / `--no-align` overrides `enabled` for one run.
+
+**What it does.** Before any distance is computed, the cleaned mesh is registered onto
+`gt_pcd.npy` with a robust point-to-point ICP (`src/core/alignment.py`): correspondences beyond
+3× the median residual are rejected and the rest are Huber-weighted, so the estimate tolerates
+a large fraction of spurious geometry. `init: centroid` matches centroids and RMS radii — enough
+for moderate misorientation; for large rotations use `init: cameras`, which seeds the ICP with a
+closed-form Umeyama fit on index-aligned camera centres (`.npy` of `(N,3)` centres or `(N,4,4)`
+camera-to-world matrices, or any camera format the pipeline reads). The *aligned* mesh is then
+sampled and measured exactly as before, so `downsample_density`, `max_dist` and the thresholds
+keep their GT-unit meaning.
+
+**What it writes.** `eval_results/alignment.json` holds the 4×4 transform applied (mesh → GT)
+and the solver statistics — median residual before/after, inlier fraction, scale, iterations —
+and `metrics.json` gains `alignment_residual_median`. Nothing is written when `enabled: false`.
+
+**How to read the numbers afterwards.** Alignment is fitted *to the GT*, so it hands the
+method the best rigid-or-similarity pose it can have. A Chamfer obtained this way measures
+shape, not pose or scale, and is not comparable with un-aligned results — compare aligned cells
+with aligned cells. `coverage` keeps its definition (share of points within `max_dist`) but
+changes meaning slightly: after alignment a low `coverage` can no longer be blamed on a frame
+mismatch, it reports genuinely missing or spurious geometry. Check `alignment_residual_median`
+too — if it is not small against `max_dist`, the ICP did not find a good fit and the cell
+should be treated as failed, whatever the Chamfer says.
+
 ## The units trap (sk3d)
 
 `downsample_density`, `max_dist` and `fscore_thresholds` are in **the mesh's own units**. sk3d
