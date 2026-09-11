@@ -212,7 +212,7 @@ def preprocess_gt(
             "mesh_vertices": int(len(mesh.vertices)),
             "mesh_faces": int(len(mesh.faces)),
             "use_masks": bool(config.cleanup.use_masks),
-            "dilation_radius": int(config.cleanup.dilation_radius),
+            "dilation_radius": (config.cleanup.dilation_radius if isinstance(config.cleanup.dilation_radius, str) else int(config.cleanup.dilation_radius)),
             "density": float(config.evaluation.downsample_density),
             "sampling_seed": int(config.evaluation.sampling_seed),
             "written": _dt.now().isoformat(timespec="seconds"),
