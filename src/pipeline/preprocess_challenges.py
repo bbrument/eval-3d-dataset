@@ -149,8 +149,8 @@ def preprocess_challenges(
         object_name: Object name.
         force: Overwrite existing masks.
     """
-    gt_dir = config.get_gt_dir(object_name)
-    raw_dir = gt_dir / "challenges_raw"
+    gt_dir = config.get_gt_dir(object_name)              # writable workspace
+    raw_dir = config.get_challenges_raw_dir(object_name)  # read-only source (gt_root)
     out_dir = gt_dir / "challenges"
     gt_pcd_path = gt_dir / "gt_pcd.npy"
 

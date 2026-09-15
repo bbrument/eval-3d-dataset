@@ -33,6 +33,7 @@ class PathsConfig(BaseModel):
 
     data_root: str = Field(description="Root directory template for camera files and masks")
     eval_root: Optional[str] = Field(default=None, description="Eval directory template for GT and method results")
+    gt_root: Optional[str] = Field(default=None, description="Read-only source of the RAW ground truth (gt.ply + challenges_raw/). When set, preprocess-gt/-challenges read the GT mesh and raw challenge sources from here, while all DERIVED artefacts (gt_cleaned.ply, gt_pcd.npy, attributes/, challenges/) are written under eval_root/{object}/Groundtruth/. When unset, the raw GT is read from that same Groundtruth dir (legacy behaviour). Supports {object}.")
     output_root: Optional[Path] = Field(default=None, description="Output directory for generated scripts and aggregated results")
 
     @model_validator(mode="after")
@@ -246,8 +247,28 @@ class Config(BaseModel):
         return self.get_eval_root(object_name) / method_name
 
     def get_gt_dir(self, object_name: str) -> Path:
-        """Get the groundtruth directory in eval_root."""
+        """Get the WRITABLE groundtruth workspace directory in eval_root.
+
+        This is where DERIVED artefacts land: gt_cleaned.ply, gt_pcd.npy,
+        attributes/, challenges/. It is never the published dataset.
+        """
         return self.get_eval_root(object_name) / "Groundtruth"
+
+    def get_gt_source_dir(self, object_name: str) -> Path:
+        """Get the READ-ONLY source directory of the raw ground truth.
+
+        Holds the raw GT mesh (gt.ply) and challenges_raw/. When paths.gt_root
+        is set (published-dataset layout, e.g. {DATA}/{object}/gt) it resolves
+        there; otherwise it falls back to the writable Groundtruth dir so the
+        legacy single-directory behaviour is preserved.
+        """
+        if self.paths.gt_root:
+            return self._resolve_template(self.paths.gt_root, object_name)
+        return self.get_gt_dir(object_name)
+
+    def get_challenges_raw_dir(self, object_name: str) -> Path:
+        """Get the raw challenge-source directory (read-only, under gt_source)."""
+        return self.get_gt_source_dir(object_name) / "challenges_raw"
 
     def get_masks_issue_watertight_dir(self, object_name: str) -> Path:
         """Get the watertight-issue masks directory (per-view hole-region masks).
@@ -256,7 +277,7 @@ class Config(BaseModel):
         ``cleanup.watertight_culling`` is on, cleanup additionally removes
         reconstruction vertices that *fill in* the non-watertight holes of the GT.
         """
-        return self.get_gt_dir(object_name) / "masks_issue_watertight"
+        return self.get_gt_source_dir(object_name) / "masks_issue_watertight"
 
     def get_gt_mesh_path(self, object_name: str, cleaned: bool = False) -> Path:
         """Get the GT mesh path by searching for .ply files in Groundtruth directory.
@@ -265,16 +286,17 @@ class Config(BaseModel):
             object_name: Object name
             cleaned: If True, return cleaned GT mesh path, else raw GT mesh
         """
-        gt_dir = self.get_gt_dir(object_name)
-        
         if cleaned:
-            # Return path to cleaned GT mesh
-            return gt_dir / "gt_cleaned.ply"
-        
+            # DERIVED product -> always the writable workspace Groundtruth dir.
+            return self.get_gt_dir(object_name) / "gt_cleaned.ply"
+
+        # RAW GT mesh -> read-only source dir (gt_root when set, else workspace).
+        gt_dir = self.get_gt_source_dir(object_name)
+
         if not gt_dir.exists():
             # Return default path for error messages
             return gt_dir / "mesh.ply"
-        
+
         # Search for .ply files.
         # DERIVED products living in the same directory must never be mistaken for the
         # raw GT MESH. 'gt_pcd.ply' (the resampled point cloud) matches the old
