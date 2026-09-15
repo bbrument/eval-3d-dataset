@@ -51,7 +51,13 @@ def cleanup_mesh(
     print(f"  Loaded mesh: {len(mesh.vertices)} vertices, {len(mesh.faces)} faces")
 
     if len(mesh.vertices) == 0 or len(mesh.faces) == 0:
-        print(f"  Warning: Skipping {object_name}/{method_name} - Empty mesh (0 vertices or 0 faces)")
+        # A failed reconstruction (e.g. COLMAP on too-few views writes an empty PLY).
+        # Persist an empty cleaned mesh instead of returning early, so evaluate() finds
+        # its input and records a failure (NaN) cell rather than raising FileNotFound.
+        print(f"  Warning: {object_name}/{method_name} - Empty mesh (0 vertices/faces) -> writing empty cleaned mesh (scored as failure)")
+        cleaned_mesh_path.parent.mkdir(parents=True, exist_ok=True)
+        import trimesh
+        save_mesh(trimesh.Trimesh(), cleaned_mesh_path)
         return
 
     if not cameras_path.exists():

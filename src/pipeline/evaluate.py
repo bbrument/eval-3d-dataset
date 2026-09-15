@@ -65,6 +65,35 @@ def evaluate(
     data_mesh = load_mesh(cleaned_mesh_path)
     print(f"  Loaded cleaned mesh: {len(data_mesh.vertices)} vertices")
 
+    if len(data_mesh.vertices) == 0 or len(data_mesh.faces) == 0:
+        # Empty reconstruction (failed method) -> failure cell. Skip NearestNeighbors,
+        # which cannot fit 0 points; build degenerate distances directly so compute_metrics
+        # yields NaN (its documented empty-set contract), keeping this out of means/rankings.
+        print("  Empty cleaned mesh -> recording failure metrics (NaN)")
+        dist_data2gt = np.empty(0, dtype=np.float32)
+        dist_gt2data = np.full(len(gt_pcd), np.inf, dtype=np.float32)
+        metrics = compute_metrics(
+            dist_data2gt, dist_gt2data,
+            config.evaluation.fscore_thresholds, config.evaluation.max_dist,
+        )
+        metrics["seed"] = seed
+        metrics["n_gt_points"] = len(gt_pcd)
+        metrics["n_data_points"] = 0
+        metrics["exclude_masks"] = []
+        metrics["max_dist"] = config.evaluation.max_dist
+        metrics["empty_reconstruction"] = True
+        eval_dir.mkdir(parents=True, exist_ok=True)
+        curves_dir = eval_dir / "curves"
+        curves_dir.mkdir(exist_ok=True)
+        np.save(curves_dir / "thresholds.npy", np.array(metrics["thresholds"]))
+        np.save(curves_dir / "precision.npy", np.array(metrics["precision"]))
+        np.save(curves_dir / "recall.npy", np.array(metrics["recall"]))
+        np.save(curves_dir / "fscore.npy", np.array(metrics["fscore"]))
+        with open(metrics_path, "w") as f:
+            json.dump(metrics, f, indent=2)
+        print("  Chamfer: nan (empty reconstruction, scored as failure)")
+        return metrics
+
     density = config.evaluation.downsample_density
 
     print(f"  Upsampling data mesh (density={density})")

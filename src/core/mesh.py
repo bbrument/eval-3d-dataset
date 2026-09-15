@@ -16,7 +16,20 @@ def load_mesh(path: str | Path) -> trimesh.Trimesh:
         Loaded trimesh object.
     """
     mesh = trimesh.load(str(path), force="mesh")
-    mesh.update_faces(mesh.nondegenerate_faces())
+    # An empty or multi-geometry file makes trimesh return a Scene / list / PointCloud
+    # (e.g. a failed COLMAP run writes a PLY with `element vertex 0`). Normalise to a
+    # (possibly empty) Trimesh so callers can rely on .vertices/.faces and guard on
+    # len()==0 rather than crash on a bare list having no `.update_faces`.
+    if isinstance(mesh, trimesh.Scene):
+        geoms = [g for g in mesh.geometry.values() if isinstance(g, trimesh.Trimesh)]
+        mesh = trimesh.util.concatenate(geoms) if geoms else trimesh.Trimesh()
+    elif isinstance(mesh, (list, tuple)):
+        geoms = [g for g in mesh if isinstance(g, trimesh.Trimesh)]
+        mesh = trimesh.util.concatenate(geoms) if geoms else trimesh.Trimesh()
+    if not isinstance(mesh, trimesh.Trimesh):
+        mesh = trimesh.Trimesh()
+    if len(mesh.faces) > 0:
+        mesh.update_faces(mesh.nondegenerate_faces())
     return mesh
 
 
