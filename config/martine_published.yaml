@@ -1,0 +1,105 @@
+# Martine — evaluation config for the PUBLISHED dataset layout.
+#
+# Runs the eval pipeline directly on the released Martine dataset, without any
+# copying, symlinking or path rewriting. It maps the eval's two roots onto the
+# published on-disk shape (see the dataset README, "File Structure"):
+#
+#   <MARTINE_ROOT>/<object>/mvs/d1/{images,masks,sfm.json,sparse}   <- data_root
+#   <MARTINE_ROOT>/<object>/Groundtruth/<gt>.ply                    <- eval_root/Groundtruth
+#   <MARTINE_ROOT>/<object>/<method>/results_raw/mesh.{ply,obj}     <- your reconstruction
+#
+# QUICK START
+#   1. Edit MARTINE_ROOT below (the two `paths:` lines) to point at your download.
+#   2. Drop each reconstruction at  <MARTINE_ROOT>/<object>/<method>/results_raw/mesh.ply
+#   3. See eval/docs (or the dataset's docs/EVALUATION.md) for the command sequence.
+#
+# RESOLUTION: this targets d1 (full res, 9568x6376). To score against d2/d4 imagery,
+# change `.../mvs/d1` to `.../mvs/d2` (or d4) in data_root — the mask auto-dilation
+# rescales itself to each mask's resolution, so nothing else needs to change.
+
+dataset:
+  name: "martine_published"
+  # Published object names (folder names). `pillow` and `coin` are omitted:
+  # they ship no Groundtruth mesh, so they cannot be scored.
+  objects:
+    - "bowl"
+    - "can"
+    - "candle"
+    - "colander"
+    - "glass"
+    - "grid"
+    - "hammer_head"
+    - "jam_pot"
+    - "knife"
+    - "lego"
+    - "moka_pot"
+    - "paw_pad"
+    - "petanque_ball"
+    - "plant"
+    - "plate"
+    - "rock"
+    - "sneakers"
+    - "spikes_ball"
+    - "spine"
+    - "straw_hat"
+    - "surgery_saw"
+    - "surgery_scissors"
+    - "vase"
+    - "warrior_head"
+    - "whisk"
+    - "wood"
+  # List the method folder name(s) you placed under each object, e.g. "colmap",
+  # "neus2". Leave empty and use the watcher/auto-scan if you prefer discovery.
+  methods:
+    - "methodA"
+  num_views: 84
+
+paths:
+  # ----- EDIT THESE TWO LINES: replace /path/to/martine_dataset with your root -----
+  # data_root  : cameras (sfm.json) + silhouettes (masks/) for visibility culling.
+  # eval_root  : Groundtruth/ and the per-method result trees.
+  data_root: "/path/to/martine_dataset/{object}/mvs/d1"
+  eval_root: "/path/to/martine_dataset/{object}"
+
+cleanup:
+  # Carve reconstructed vertices that project outside every (dilated) silhouette.
+  # Auto dilation: 48 px at full res (9568x6376), rescaled per mask resolution,
+  # so the same value is correct at d1/d2/d4.
+  dilation_radius: auto
+  dilation_ref_px: 48
+  dilation_ref_n_pixels: 61005568   # 9568 * 6376 (d1 full resolution)
+  use_masks: true
+
+evaluation:
+  # Units are MESH UNITS = millimetres (Martine GT meshes are in mm).
+  downsample_density: 0.05          # resample step (mm) for both GT and recon
+  max_dist: 4.0                     # Chamfer/coverage cutoff (mm)
+  curvature_radius: 2.0
+  fscore_thresholds: [0.5, 1.0, 1.5, 2.0, 5.0]
+
+visualization:
+  auto_generate: false
+  default_metrics:
+    - accuracy
+    - completeness
+  default_views: [0, 20, 40, 60]
+  crop: true
+  crop_margin: 15
+  colormaps:
+    accuracy: viridis
+    completeness: viridis
+  max_dist: 4.0
+
+# Default to local execution so the config runs anywhere out of the box.
+# For a cluster, set mode: "slurm" and fill the account/partition (see the
+# `slurm:` block, mirrored from config/martine_watcher.yaml).
+execution:
+  mode: "local"
+  local:
+    max_workers: 4
+  # slurm:
+  #   account: "m25115"
+  #   partition: "mesonet"
+  #   cleanup: { cpus: 16, mem_gb: 256, time: "06:00:00" }
+  #   eval:    { cpus: 16, mem_gb: 256, time: "04:00:00" }
+  #   viz:     { cpus: 4,  mem_gb: 128, time: "01:00:00" }

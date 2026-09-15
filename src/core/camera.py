@@ -160,6 +160,7 @@ def load_cameras_from_sfmdata(sfm_path: str | Path) -> dict[str, np.ndarray]:
             K, K_inv, P, P_inv, Rt, scale, scale_inv, mask_names
     """
     import json
+    import os
 
     # AliceVision world correction (flip Y and Z) — same as pyalicevisionlib
     WORLD_CORR = np.diag([1.0, -1.0, -1.0])
@@ -176,6 +177,7 @@ def load_cameras_from_sfmdata(sfm_path: str | Path) -> dict[str, np.ndarray]:
         "Rt": [], "scale": [], "scale_inv": [],
     }
     pose_ids_collected = []
+    mask_stems_collected = []
     seen_pose_ids = set()
 
     for view in sfm.get("views", []):
@@ -241,7 +243,16 @@ def load_cameras_from_sfmdata(sfm_path: str | Path) -> dict[str, np.ndarray]:
         cameras["scale_inv"].append(S.astype(np.float32))
         pose_ids_collected.append(pose_id)
 
-    cameras["mask_names"] = [f"{pid}.png" for pid in pose_ids_collected]
+        # Mask/image filename stem. Prefer the view's own image `path` basename so
+        # mask lookup follows the on-disk naming convention rather than the poseId.
+        # Internally the image is named "<poseId>.exr" so the stem equals poseId and
+        # this is a no-op; on the published Martine layout images are renamed to
+        # "000.exr" (masks "000.png"), so the mask must be looked up as "000.png".
+        img_path = view.get("path", "")
+        stem = os.path.splitext(os.path.basename(img_path))[0] if img_path else pose_id
+        mask_stems_collected.append(stem)
+
+    cameras["mask_names"] = [f"{stem}.png" for stem in mask_stems_collected]
     cameras["image_width"] = w
     cameras["image_height"] = h
 
