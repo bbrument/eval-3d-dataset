@@ -30,7 +30,7 @@ dataset:
     - "27_bowl"
     - "28_spine"
   methods: []
-  exclude_methods: ["gomvs"]
+  exclude_methods: ["gomvs", "rvo-rnbneus2", "mvscps-tenlight-dir-pilF", "mvscps-tenlight-point-pilF", "__bak", "__rerun", "outofscope"]
   num_views: 84
 
 paths:
@@ -39,11 +39,11 @@ paths:
 
 cleanup:
   # Resolution-adaptive dilation (48px @ full res 9568x6376, scaled per mask).
-  # Inert while use_masks is false, but keeps the Martine default coherent.
+  # Apply masks during visibility filtering.
   dilation_radius: auto
   dilation_ref_px: 48
   dilation_ref_n_pixels: 61005568  # 9568 * 6376
-  use_masks: false
+  use_masks: true
 
 evaluation:
   downsample_density: 0.05
