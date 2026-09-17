@@ -1,17 +1,34 @@
-# eval-3d-dataset
+<div align="center">
+<h1>eval-3d-dataset<br>
+Evaluation Pipeline for Multi-View 3D Surface Reconstruction</h1>
 
-Evaluation pipeline for multi-view 3D surface reconstruction benchmarks.
+[![License: CC BY 4.0](https://img.shields.io/badge/License-CC%20BY%204.0-blue.svg)](https://creativecommons.org/licenses/by/4.0/)
+[![Paper](https://img.shields.io/badge/NeurIPS%202026-Paper-red.svg)](#)
+[![Python](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](https://www.python.org/)
+
+> The official evaluation code for the **[Martine](https://github.com/RobinBruneau/martine_dataset)** benchmark — and a dataset-agnostic pipeline that runs the same metrics on **DiLiGenT-MV**, **LUCES-MV**, **Skoltech3D**, **DTU**, and **EvalMVX**.
+</div>
 
 It takes a ground-truth mesh and one reconstructed mesh per method, and produces Chamfer
 distance, precision/recall/F-score at fixed thresholds, dense PR curves, a `coverage` figure
 telling you how much of the cloud those numbers were actually computed on, and optional metric
 visualisations.
 
-It was built for a **millimetre-scale 84-view benchmark** (codename *martine*) and for
-**Skoltech3D** (*sk3d*), but nothing dataset-specific lives in `src/` — any dataset that follows
-the [input layout](docs/input-layout.md) works, driven entirely by a config file. Ready-to-edit
-configurations for martine, sk3d, DiLiGenT-MV, DTU, LUCES-MV and EvalMVX ship in `config/`; see
-the [datasets guide](docs/datasets.md).
+It was built for **Martine**, a millimetre-scale 84-view benchmark, and for **Skoltech3D**
+(*sk3d*), but nothing dataset-specific lives in `src/` — any dataset that follows the
+[input layout](docs/input-layout.md) works, driven entirely by a config file. Ready-to-edit
+configurations for **Martine**, **sk3d**, **DiLiGenT-MV**, **DTU**, **LUCES-MV** and **EvalMVX**
+ship in `config/`; see the [datasets guide](docs/datasets.md).
+
+## Table of Contents
+
+- [Results from earlier versions are not comparable](#-results-from-earlier-versions-are-not-comparable)
+- [Install](#install)
+- [Quick start](#quick-start)
+- [Documentation](#documentation)
+- [Tests](#tests)
+- [Scope](#scope)
+- [License](#license)
 
 ---
 
@@ -103,6 +120,22 @@ the only component requiring an unpublished internal library.
 
 ---
 
-## Licence
+## License
 
-MIT — see [`LICENSE`](LICENSE). Copyright (c) 2026 Baptiste Brument.
+This work is licensed under the **Creative Commons Attribution 4.0 International
+(CC BY 4.0)** License — see [`LICENSE`](LICENSE).
+Copyright (c) 2026 Baptiste Brument and the Martine authors.
+
+## Citation
+
+If this pipeline supports your research, please cite the **Martine** paper:
+
+```bibtex
+@inproceedings{martine2026,
+  title={Martine: Benchmarking Multi-View 3D Surface Reconstruction
+         Across Viewpoint Coverage, Resolution, and Lighting},
+  author={Bruneau, Robin and Brument, Baptiste and Giraud, Frederic and Sigrist, Bastian and Jecklin, Sascha and Fürnstahl, Philipp and Menze, Bjoern and Calvet, Lilian},
+  booktitle={NeurIPS},
+  year={2026}
+}
+```
