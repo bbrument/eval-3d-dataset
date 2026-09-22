@@ -31,26 +31,6 @@ ship in `config/`; see the [datasets guide](docs/datasets.md).
 
 ---
 
-## ⚠️ Results from earlier versions are not comparable
-
-If you evaluated with a copy of this pipeline from before **July 2026**, your numbers differ from
-those produced today, and the difference is not a rounding matter. Four defects fixed in
-July–August 2026 changed reported results:
-
-1. **Chamfer returned `0.0`** — the *best* possible score — when no point survived `max_dist`, so
-   total failures sorted first. It now returns `NaN`.
-2. **`coverage` did not exist**, so a Chamfer computed on 1% of the points looked like a score. It
-   is now reported next to every Chamfer.
-3. **Exclusion masks were applied inconsistently** across the evaluate / curve / recompute paths.
-   All three now share one masking module.
-4. **Dense F-score curves were overwritten** by the coarse reporting grid.
-
-Cross-version results should be regenerated, not reconciled.
-[`CHANGELOG.md`](CHANGELOG.md) documents each defect in full — what was wrong, why it mattered,
-and what changed in the output.
-
----
-
 ## Install
 
 ```bash
