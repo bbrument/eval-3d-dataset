@@ -13,10 +13,9 @@ distance, precision/recall/F-score at fixed thresholds, dense PR curves, a `cove
 telling you how much of the cloud those numbers were actually computed on, and optional metric
 visualisations.
 
-It was built for **Martine**, a millimetre-scale 84-view benchmark, and for **Skoltech3D**
-(*sk3d*), but nothing dataset-specific lives in `src/` — any dataset that follows the
+It was built for **Martine**, a millimetre-scale 84-view benchmark, but nothing dataset-specific lives in `src/` — any dataset that follows the
 [input layout](docs/input-layout.md) works, driven entirely by a config file. Ready-to-edit
-configurations for **Martine**, **sk3d**, **DiLiGenT-MV**, **DTU**, **LUCES-MV** and **EvalMVX**
+configurations for **Martine**, **Skoltech3d**, **DiLiGenT-MV**, **DTU**, **LUCES-MV** and **EvalMVX**
 ship in `config/`; see the [datasets guide](docs/datasets.md).
 
 ## Table of Contents
