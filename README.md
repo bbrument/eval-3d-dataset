@@ -97,6 +97,21 @@ ground-truth mesh (attribute/material zones such as lambertian, specular, …), 
 of over the whole surface. You can therefore score reconstruction quality on precise parts of an
 object (a labelled region, thin structures, cavities, …) rather than as a single global number.
 
+**Adding your own challenge.** A *challenge* is a named region of an object that is scored
+separately (e.g. `excluded`, `lambertian`, or any name you pick). The name is **chosen by you and
+taken from the file name** — the pipeline discovers challenges from files, so there is nothing to
+list by hand. To add one:
+
+1. In your config `.yaml`, point `paths.gt_root` at the read-only folder holding each object's raw
+   ground truth; challenge sources live in its `challenges_raw/` sub-folder (see
+   [docs/configuration.md](docs/configuration.md) and [docs/input-layout.md](docs/input-layout.md)).
+2. Drop a source named after the challenge into `challenges_raw/`, either
+   - a copy of the GT mesh with the target region painted **red**, `‹name›.ply`, or
+   - per-view binary masks `‹viewId›_‹name›.png`.
+3. Run `preprocess-challenges` → it writes `challenges/‹name›.npy`. From there `apply-masks` and the
+   aggregation pick every `challenges/*.npy` up **automatically** and report each method per
+   challenge under `‹name›` — no code change.
+
 **Not yet implemented.** Normal accuracy — the mean absolute error (MAE) on surface normals — is
 planned but not part of the current metrics.
 

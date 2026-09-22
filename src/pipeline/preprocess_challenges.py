@@ -179,26 +179,10 @@ def preprocess_challenges(
     categories: dict[str, np.ndarray] = {}
 
     for ply_path in sorted(ply_files):
-        stem = ply_path.stem
-        # Published challenge kits may use the concise canonical names
-        # ``lambertian.ply`` / ``excluded.ply``.  Older archives used names
-        # such as ``21_excluded.ply`` and ``21_Artec_...ply``; keep supporting
-        # both forms so replacing a PNG mask with its colored GT mesh remains
-        # reproducible.
-        if stem in {"lambertian", "excluded"}:
-            category = stem
-        elif stem.endswith("_excluded"):
-            category = "excluded"
-        elif "_Artec_" in stem:
-            category = "excluded"
-        elif "_CT_" in stem:
-            category = "excluded"
-        else:
-            parts = stem.split("_", 1)
-            if len(parts) < 2:
-                print(f"  Skipping {ply_path.name}: no category in name")
-                continue
-            category = parts[1]
+        # The file name IS the challenge name (canonical): ``<name>.ply`` -> ``<name>``.
+        # Pick any name you like for your own challenge (e.g. ``excluded.ply``,
+        # ``lambertian.ply``, ``my_zone.ply``); it becomes ``challenges/<name>.npy``.
+        category = ply_path.stem
 
         print(f"  [{category}] Processing {ply_path.name}")
         mask = _process_ply(ply_path, gt_pcd, max_dist)
