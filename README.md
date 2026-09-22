@@ -1,6 +1,5 @@
 <div align="center">
-<h1>eval-3d-dataset<br>
-Evaluation Pipeline for Multi-View 3D Surface Reconstruction</h1>
+<h1>Evaluation Pipeline for Multi-View 3D Surface Reconstruction</h1>
 
 [![License: CC BY 4.0](https://img.shields.io/badge/License-CC%20BY%204.0-blue.svg)](https://creativecommons.org/licenses/by/4.0/)
 [![Paper](https://img.shields.io/badge/NeurIPS%202026-Paper-red.svg)](#)
