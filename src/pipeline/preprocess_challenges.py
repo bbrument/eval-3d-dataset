@@ -180,7 +180,14 @@ def preprocess_challenges(
 
     for ply_path in sorted(ply_files):
         stem = ply_path.stem
-        if stem.endswith("_excluded"):
+        # Published challenge kits may use the concise canonical names
+        # ``lambertian.ply`` / ``excluded.ply``.  Older archives used names
+        # such as ``21_excluded.ply`` and ``21_Artec_...ply``; keep supporting
+        # both forms so replacing a PNG mask with its colored GT mesh remains
+        # reproducible.
+        if stem in {"lambertian", "excluded"}:
+            category = stem
+        elif stem.endswith("_excluded"):
             category = "excluded"
         elif "_Artec_" in stem:
             category = "excluded"
