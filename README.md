@@ -20,7 +20,6 @@ ship in `config/`; see the [datasets guide](docs/datasets.md).
 
 ## Table of Contents
 
-- [Results from earlier versions are not comparable](#-results-from-earlier-versions-are-not-comparable)
 - [Install](#install)
 - [Quick start](#quick-start)
 - [Documentation](#documentation)
