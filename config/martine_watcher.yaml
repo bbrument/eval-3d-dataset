@@ -69,7 +69,7 @@ visualization:
   max_dist: 4.0
 
 execution:
-  mode: "slurm"
+  mode: "local"
   slurm:
     account: "m25115"
     partition: "mesonet"

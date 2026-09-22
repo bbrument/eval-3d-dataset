@@ -27,7 +27,7 @@
 # rescales itself to each mask's resolution, so nothing else needs to change.
 
 dataset:
-  name: "martine_published"
+  name: "martine"
   # Published object names (folder names). `pillow` and `coin` are omitted:
   # they ship no Groundtruth mesh, so they cannot be scored.
   objects:

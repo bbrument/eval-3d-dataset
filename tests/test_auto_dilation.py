@@ -85,7 +85,7 @@ def test_cleanup_config_rejects_negative_int():
 
 
 def test_martine_dataset_config_uses_auto():
-    cfg = load_config("config/martine_dataset.yaml")
+    cfg = load_config("config/martine.yaml")
     assert cfg.cleanup.dilation_radius == "auto"
     assert cfg.cleanup.dilation_ref_px == 48
     assert cfg.cleanup.dilation_ref_n_pixels == FULL_W * FULL_H

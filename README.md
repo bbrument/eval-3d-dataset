@@ -44,14 +44,14 @@ run over 10–30 M points and take roughly 20 minutes per object×method cell.
 Every command takes `-c/--config`; it is required.
 
 ```bash
-eval-pipeline -c config/example_martine.yaml --help      # installed entry point
-python -m src.cli -c config/example_martine.yaml --help  # equivalent, without installing
+eval-pipeline -c config/martine.yaml --help      # installed entry point
+python -m src.cli -c config/martine.yaml --help  # equivalent, without installing
 ```
 
 ## Quick start
 
 ```bash
-CFG=config/example_martine.yaml     # or config/example_sk3d.yaml
+CFG=config/martine.yaml     # or config/skoltech3d.yaml
 eval-pipeline -c $CFG preprocess-gt --clean-gt   # clean + sample the GT mesh
 eval-pipeline -c $CFG cleanup                    # carve reconstructions to the silhouettes
 eval-pipeline -c $CFG evaluate                   # Chamfer, coverage, F-score

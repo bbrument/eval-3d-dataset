@@ -1,6 +1,6 @@
 # eval-pipeline — EvalMVX (Yang et al., arXiv 2602.24065), 25 objets, 20 vues.
 #
-# Modèle : `config/sk3d.yaml` (même problématique d'unités) et `config/lucesmv.yaml`
+# Modèle : `config/skoltech3d.yaml` (même problématique d'unités) et `config/lucesmv.yaml`
 # (mêmes valeurs de seuils, objets de taille comparable).
 #
 # ============================================================================

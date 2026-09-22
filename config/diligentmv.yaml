@@ -4,7 +4,7 @@
 
 # Dataset configuration
 dataset:
-  name: "dlmv"
+  name: "diligentmv"
   objects:
     - "bearPNG"
     - "buddhaPNG"
