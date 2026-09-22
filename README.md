@@ -91,9 +91,6 @@ headless environment. Everything else must pass.
 
 This pipeline evaluates **geometry**: Chamfer distance, precision/recall/F-score, coverage.
 
-It does **not** evaluate surface orientation. The normal-map / Mean-Angular-Error path was
-removed in August 2026: it had never produced a reported number in any results file, and it was
-the only component requiring an unpublished internal library.
 
 ---
 
