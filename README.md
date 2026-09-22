@@ -91,6 +91,14 @@ headless environment. Everything else must pass.
 
 This pipeline evaluates **geometry**: Chamfer distance, precision/recall/F-score, coverage.
 
+**Region-restricted evaluation (taxonomy).** By supplying a *taxonomy* — 3D masks defined on the
+ground-truth mesh (attribute/material zones such as lambertian, specular, …), generated with
+`preprocess-taxonomy` from a `taxonomy.json` — the same metrics are computed **per zone** instead
+of over the whole surface. You can therefore score reconstruction quality on precise parts of an
+object (a labelled region, thin structures, cavities, …) rather than as a single global number.
+
+**Not yet implemented.** Normal accuracy — the mean absolute error (MAE) on surface normals — is
+planned but not part of the current metrics.
 
 ---
 
