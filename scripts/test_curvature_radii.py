@@ -88,7 +88,7 @@ def main():
     parser.add_argument("--view", "-v", type=int, nargs="+", default=[0, 40])
     args = parser.parse_args()
 
-    config_path = Path("/home/babrument/dev/eval_dataset/eval_pipeline/config/martine_watcher.yaml")
+    config_path = Path("/home/babrument/dev/eval_dataset/eval_pipeline/config/martine_watcher.local.yaml")
     config = load_config(str(config_path))
 
     object_name = args.object

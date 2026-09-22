@@ -78,8 +78,8 @@ dataset:
   num_views: 20
 
 paths:
-  data_root: "/projects/m25115/eval_3d_datasets/evalmvx/data/{object}"
-  eval_root: "/projects/m25115/eval_3d_datasets/evalmvx/eval/{object}"
+  data_root: "/path/to/evalmvx/data/{object}"
+  eval_root: "/path/to/workspace/evalmvx/eval/{object}"
 
 cleanup:
   dilation_radius: 12
@@ -119,4 +119,4 @@ execution:
 
 watcher:
   scan_interval_minutes: 15
-  log_file: "/projects/m25115/eval_3d_datasets/evalmvx/eval_watcher.log"
+  log_file: "/path/to/evalmvx/eval_watcher.log"

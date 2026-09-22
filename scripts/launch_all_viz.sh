@@ -7,7 +7,7 @@ set -euo pipefail
 # Clear Python bytecode cache to ensure latest code is used
 find /home/babrument/dev/eval_dataset/eval_pipeline/src -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
 
-CONFIG=/home/babrument/dev/eval_dataset/eval_pipeline/config/martine_watcher.yaml
+CONFIG=/home/babrument/dev/eval_dataset/eval_pipeline/config/martine_watcher.local.yaml
 VENV=/home/babrument/dev/eval_dataset/eval_pipeline/venv/bin/activate
 MESA=/apps/spack/spack-softwares/linux-rocky9-zen3/gcc-13.1.0/mesa-23.3.6-topby2nfuloy3ucydjszrde2j4mmu57w
 WRAP="export LD_LIBRARY_PATH=$MESA/lib:\${LD_LIBRARY_PATH:-} && export PYOPENGL_PLATFORM=osmesa && source $VENV"

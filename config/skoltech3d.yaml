@@ -1,7 +1,7 @@
 # eval-pipeline — Skoltech3D (wooden_trex et suivants).
 #
-# Le déploiement `/projects/m25115/eval_3d_datasets/sk3d/config.yaml` est un symlink
-# vers ce fichier : source de vérité unique, versionnée avec le pipeline.
+# Published config: machine paths are placeholders. The real machine paths live
+# in config/skoltech3d.local.yaml (git-ignored) — run with `-c config/skoltech3d.local.yaml`.
 #
 # Paramètres d'évaluation calqués sur `config/lucesmv.yaml` du eval_pipeline plutôt
 # que sur `diligentmv.yaml` : les objets sk3d sont grands (diagonale GT du wooden_trex
@@ -33,8 +33,8 @@ dataset:
   num_views: 100
 
 paths:
-  data_root: "/projects/m25115/eval_3d_datasets/sk3d/data/{object}"
-  eval_root: "/projects/m25115/eval_3d_datasets/sk3d/eval/{object}"
+  data_root: "/path/to/skoltech3d/data/{object}"
+  eval_root: "/path/to/workspace/skoltech3d/eval/{object}"
 
 cleanup:
   dilation_radius: 12
@@ -54,4 +54,4 @@ execution:
 
 watcher:
   scan_interval_minutes: 15
-  log_file: "/projects/m25115/eval_3d_datasets/sk3d/eval_watcher.log"
+  log_file: "/path/to/skoltech3d/eval_watcher.log"

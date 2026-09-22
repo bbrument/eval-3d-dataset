@@ -34,8 +34,8 @@ dataset:
   num_views: 84
 
 paths:
-  data_root: "/home/babrument/dev/alicevision/dataset_temp/objects/{object}/08c_undisto_refin_pct90/mvs"
-  eval_root: "/projects/m25115/eval_3d_datasets/eccv_dataset/eval/{object}"
+  data_root: "/path/to/martine_dataset/{object}/08c_undisto_refin_pct90/mvs"
+  eval_root: "/path/to/workspace/martine/eval/{object}"
 
 cleanup:
   # Resolution-adaptive dilation (48px @ full res 9568x6376, scaled per mask).

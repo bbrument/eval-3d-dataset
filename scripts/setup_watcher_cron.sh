@@ -4,7 +4,7 @@
 
 set -e
 
-CONFIG_FILE="${1:-config/diligentmv.yaml}"
+CONFIG_FILE="${1:-config/diligentmv.local.yaml}"
 INTERVAL="${2:-15}"
 
 # Get absolute paths

@@ -29,11 +29,11 @@ dataset:
 paths:
   # Data root contains cameras.npz, masks, normals
   # Template: {object} and {normals_priors} will be replaced
-  data_root: "/projects/m25115/eval_3d_datasets/dlmv/data/{object}/{normals_priors}"
+  data_root: "/path/to/diligentmv/data/{object}/{normals_priors}"
 
   # Eval root contains Groundtruth/ and all method results
   # Template: {object} will be replaced
-  eval_root: "/projects/m25115/eval_3d_datasets/dlmv/eval/{object}"
+  eval_root: "/path/to/workspace/diligentmv/eval/{object}"
 
 # Mesh cleanup configuration
 cleanup:
@@ -115,4 +115,4 @@ aggregation:
 # Watcher configuration (used by 'watch' command)
 watcher:
   scan_interval_minutes: 15
-  log_file: "/projects/m25115/eval_3d_datasets/dlmv/eval_watcher.log"
+  log_file: "/path/to/diligentmv/eval_watcher.log"

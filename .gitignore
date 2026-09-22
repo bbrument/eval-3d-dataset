@@ -50,5 +50,8 @@ docs/
 # Watcher state files
 config/.*_state.json
 
+# Local machine-specific config overrides (real paths); published configs use placeholders
+config/*.local.yaml
+
 # Metrics-fix backup snapshots (local only)
 .metrics_fix_backups/

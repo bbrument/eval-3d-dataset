@@ -24,8 +24,8 @@ dataset:
   num_views: 15
 
 paths:
-  data_root: "/projects/m25115/eval_3d_datasets/lucesmv/data/{object}/{normals_priors}"
-  eval_root: "/projects/m25115/eval_3d_datasets/lucesmv/eval/{object}"
+  data_root: "/path/to/lucesmv/data/{object}/{normals_priors}"
+  eval_root: "/path/to/workspace/lucesmv/eval/{object}"
 
 cleanup:
   dilation_radius: 12
