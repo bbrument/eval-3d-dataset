@@ -1,7 +1,7 @@
 <div align="center">
 <h1>Evaluation Pipeline for Multi-View 3D Surface Reconstruction</h1>
 
-[![License: CC BY 4.0](https://img.shields.io/badge/License-CC%20BY%204.0-blue.svg)](https://creativecommons.org/licenses/by/4.0/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Paper](https://img.shields.io/badge/NeurIPS%202026-Paper-red.svg)](#)
 [![Python](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](https://www.python.org/)
 
@@ -119,8 +119,7 @@ planned but not part of the current metrics.
 
 ## License
 
-This work is licensed under the **Creative Commons Attribution 4.0 International
-(CC BY 4.0)** License — see [`LICENSE`](LICENSE).
+This code is released under the **MIT License** — see [`LICENSE`](LICENSE).
 Copyright (c) 2026 Baptiste Brument and the Martine authors.
 
 ## Citation
