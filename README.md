@@ -25,7 +25,6 @@ ship in `config/`; see the [datasets guide](docs/datasets.md).
 - [Documentation](#documentation)
 - [Tests](#tests)
 - [Scope](#scope)
-- [Known issues (work in progress)](#known-issues-work-in-progress)
 - [License](#license)
 
 ---
@@ -117,18 +116,6 @@ list by hand. To add one:
 planned but not part of the current metrics.
 
 ---
-
-## Known issues (work in progress)
-
-- **Mask lookup by truncation (half-pixel shift).** `src/core/visibility.py` (l.174-175) and
-  `src/pipeline/preprocess_challenges.py` (l.124-125) read the mask pixel of a projected point with
-  `x.astype(int)`, i.e. by truncation instead of rounding to the nearest pixel centre. With cameras in the
-  AliceVision convention (centre of the top-left pixel at (0, 0)), this samples the mask half a pixel off
-  (equivalent to a +0.5 px shift of the mask). It affects the per-point `visibility_count`, the watertight
-  (hole) culling and the PNG-based challenge masks; mesh cleanup is not affected (its 48 px mask dilation
-  hides the offset). The effect is sub-pixel (about 0.03 mm on Martine at full resolution).
-  Fix to do: round to the nearest pixel (`np.round`) and use the matching bounds (`-0.5 <= x < w - 0.5`),
-  then regenerate the affected ground-truth derivatives and re-run the evaluation.
 
 ## License
 

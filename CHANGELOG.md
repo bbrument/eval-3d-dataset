@@ -3,6 +3,19 @@
 ## Unreleased
 
 ### Fixed
+- **Masks are read at the nearest pixel centre for AliceVision cameras.** A projected point was
+  looked up in a silhouette by truncation (`x.astype(int)`, i.e. pixel `floor(x)`, kept when
+  `0 <= x < w`). AliceVision SfMData cameras — the Martine `eval_cameras.sfm` — put the centre of
+  the top-left pixel at (0, 0), so pixel `i` covers `[i - 0.5, i + 0.5)`: every mask was read half
+  a pixel off. Each camera dict now carries its convention (`cameras["pixel_centre"]`: `0.0` for
+  SfMData; `0.5`, the former truncation, for `cameras.npz`, whose convention is not established) and
+  every mask consumer uses it through `visibility.project_to_pixels`: cleanup and GT cleaning
+  (`filter_by_visibility`), `visibility_count`, the watertight (hole) culling and the PNG challenge
+  sources. **Output change** (SfMData cameras only; `cameras.npz` datasets are unchanged):
+  cleanup/GT-cleaning decisions near the dilated silhouettes, the watertight culling of objects with
+  `masks_watertight/`, and the per-point `visibility_count`. Ground-truth derivatives computed before
+  this fix (e.g. `attributes/visibility_count.npy` of the Martine `gt/` kit) used the truncated
+  lookup and must be regenerated to match it.
 - **`max_dist` no longer applied to precision/recall/F-score.** `compute_fscore_curve` dropped
   every distance above `evaluation.max_dist` before counting, shrinking only the denominator
   (`n_a`/`n_b`) while the numerator was unaffected — so every reported value was the true value

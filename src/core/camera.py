@@ -9,6 +9,16 @@ from pathlib import Path
 import cv2
 import numpy as np
 
+# Pixel-centre convention of the projected image coordinates: the coordinate of the CENTRE of
+# the top-left pixel. Every camera dict carries it as ``cameras["pixel_centre"]`` so that masks
+# are looked up at the right pixel (see visibility.project_to_pixels).
+#   0.0 -- AliceVision SfMData (the Martine cameras) and OpenCV: pixel (i, j) covers
+#          [i - 0.5, i + 0.5) x [j - 0.5, j + 0.5); a point reads its NEAREST pixel centre.
+#   0.5 -- pixel i covers [i, i + 1): the point reads pixel floor(x), the former lookup by
+#          truncation, kept for camera files whose convention is not established (cameras.npz).
+PIXEL_CENTRE_ALICEVISION = 0.0
+PIXEL_CENTRE_TRUNCATE = 0.5
+
 
 def load_K_Rt_from_P(P: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
     """Decompose projection matrix P into intrinsics K and pose [R|t].
@@ -141,6 +151,10 @@ def load_cameras(npz_path: str | Path) -> dict[str, np.ndarray]:
     for key in cameras:
         cameras[key] = np.array(cameras[key])
 
+    # The pixel-centre convention of cameras.npz files is not established (it depends on the
+    # tool that wrote them): keep the historical lookup by truncation.
+    cameras["pixel_centre"] = PIXEL_CENTRE_TRUNCATE
+
     return cameras
 
 
@@ -255,9 +269,11 @@ def load_cameras_from_sfmdata(sfm_path: str | Path) -> dict[str, np.ndarray]:
     cameras["mask_names"] = [f"{stem}.png" for stem in mask_stems_collected]
     cameras["image_width"] = w
     cameras["image_height"] = h
+    # AliceVision: centre of the top-left pixel at (0, 0) (principal point cx = w/2 + pp).
+    cameras["pixel_centre"] = PIXEL_CENTRE_ALICEVISION
 
     for key in cameras:
-        if key in ("mask_names", "image_width", "image_height"):
+        if key in ("mask_names", "image_width", "image_height", "pixel_centre"):
             continue
         cameras[key] = np.array(cameras[key])
 

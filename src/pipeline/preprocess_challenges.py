@@ -8,9 +8,9 @@ import trimesh
 from scipy.spatial import cKDTree
 
 from ..config import Config
-from ..core.camera import load_cameras_auto, project_points
+from ..core.camera import PIXEL_CENTRE_TRUNCATE, load_cameras_auto
 from ..core.mesh import load_mesh
-from ..core.visibility import ray_visibility_check
+from ..core.visibility import project_to_pixels, ray_visibility_check
 
 
 COLOR_THRESHOLDS = {
@@ -111,19 +111,11 @@ def _process_png(
     camera_center = cameras["camera_centers"][view_idx]
     vertices = gt_mesh.vertices
 
-    projected, depth_valid = project_points(vertices, P)
-    h, w = mask_bin.shape
-    x = projected[:, 0]
-    y = projected[:, 1]
-
-    in_bounds = depth_valid & (x >= 0) & (x < w) & (y >= 0) & (y < h) & ~np.isnan(x) & ~np.isnan(y)
-
+    in_bounds, xi, yi = project_to_pixels(
+        vertices, P, mask_bin.shape, cameras.get("pixel_centre", PIXEL_CENTRE_TRUNCATE)
+    )
     in_mask = np.zeros(len(vertices), dtype=bool)
-    valid_idx = np.where(in_bounds)[0]
-    if len(valid_idx) > 0:
-        xi = x[valid_idx].astype(int)
-        yi = y[valid_idx].astype(int)
-        in_mask[valid_idx] = mask_bin[yi, xi]
+    in_mask[in_bounds] = mask_bin[yi[in_bounds], xi[in_bounds]]
 
     visible = ray_visibility_check(vertices, gt_mesh, camera_center)
     vertex_mask = in_mask & visible

@@ -8,7 +8,7 @@ import trimesh
 from PIL import Image
 from tqdm import tqdm
 
-from .camera import get_camera_centers, project_points
+from .camera import PIXEL_CENTRE_ALICEVISION, PIXEL_CENTRE_TRUNCATE, get_camera_centers, project_points  # noqa: F401 (conventions re-exported)
 
 
 def load_mask(mask_path: str | Path) -> np.ndarray:
@@ -109,10 +109,51 @@ def ray_visibility_check(
     return ~hit
 
 
+def project_to_pixels(
+    points: np.ndarray,
+    P: np.ndarray,
+    image_shape: tuple[int, ...],
+    pixel_centre: float = PIXEL_CENTRE_TRUNCATE,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Project 3D points to the pixel that contains them.
+
+    With the centre of the top-left pixel at ``pixel_centre`` (0.0 for AliceVision/OpenCV
+    cameras, see ``src.core.camera``), pixel i spans [i + c - 0.5, i + c + 0.5): a point at x
+    lies in pixel floor(x - c + 0.5), and the image spans c - 0.5 <= x < w + c - 0.5. For
+    c = 0.5 this is the lookup by truncation (pixel floor(x), 0 <= x < w).
+
+    Args:
+        points: 3D points, shape (N, 3).
+        P: Projection matrix (4x4).
+        image_shape: (height, width) of the image.
+        pixel_centre: Coordinate of the centre of the top-left pixel.
+
+    Returns:
+        Tuple of:
+            - in_bounds: Boolean array, True if the point is in front of the camera and
+              inside the image, shape (N,).
+            - xi, yi: Integer pixel indices, shape (N,); 0 where not in_bounds.
+    """
+    projected, depth_valid = project_points(points, P)
+
+    h, w = image_shape[:2]
+    # Shift to coordinates where pixel i covers [i, i + 1). NaN (invalid depth) compares False.
+    u = projected[:, 0].astype(np.float64) + (0.5 - pixel_centre)
+    v = projected[:, 1].astype(np.float64) + (0.5 - pixel_centre)
+    in_bounds = depth_valid & (u >= 0) & (u < w) & (v >= 0) & (v < h)
+
+    xi = np.zeros(len(u), dtype=np.int64)
+    yi = np.zeros(len(v), dtype=np.int64)
+    xi[in_bounds] = np.floor(u[in_bounds]).astype(np.int64)
+    yi[in_bounds] = np.floor(v[in_bounds]).astype(np.int64)
+    return in_bounds, xi, yi
+
+
 def check_points_in_bounds(
     points: np.ndarray,
     P: np.ndarray,
     image_shape: tuple[int, int],
+    pixel_centre: float = PIXEL_CENTRE_TRUNCATE,
 ) -> np.ndarray:
     """Check if 3D points project inside image bounds.
 
@@ -120,18 +161,12 @@ def check_points_in_bounds(
         points: 3D points, shape (N, 3).
         P: Projection matrix (4x4).
         image_shape: (height, width) of the image.
+        pixel_centre: Coordinate of the centre of the top-left pixel (``cameras["pixel_centre"]``).
 
     Returns:
         Boolean array, True if point projects inside image bounds, shape (N,).
     """
-    projected, depth_valid = project_points(points, P)
-
-    h, w = image_shape
-    x = projected[:, 0]
-    y = projected[:, 1]
-
-    in_bounds = depth_valid & (x >= 0) & (x < w) & (y >= 0) & (y < h) & ~np.isnan(x) & ~np.isnan(y)
-
+    in_bounds, _, _ = project_to_pixels(points, P, image_shape, pixel_centre)
     return in_bounds
 
 
@@ -140,14 +175,19 @@ def check_points_in_mask(
     P: np.ndarray,
     mask: np.ndarray,
     dilation_radius: int | None = None,
+    pixel_centre: float = PIXEL_CENTRE_TRUNCATE,
 ) -> tuple[np.ndarray, np.ndarray]:
     """Check if 3D points project inside a 2D mask.
+
+    The mask is read at the pixel containing the projection (nearest pixel centre for
+    AliceVision cameras), see :func:`project_to_pixels`.
 
     Args:
         points: 3D points, shape (N, 3).
         P: Projection matrix (4x4).
         mask: Binary mask, shape (H, W).
         dilation_radius: Optional mask dilation radius.
+        pixel_centre: Coordinate of the centre of the top-left pixel (``cameras["pixel_centre"]``).
 
     Returns:
         Tuple of:
@@ -158,22 +198,10 @@ def check_points_in_mask(
         kernel = create_dilation_kernel(dilation_radius)
         mask = cv2.dilate(mask.astype(np.uint8), kernel, iterations=1).astype(bool)
 
-    projected, depth_valid = project_points(points, P)
-
-    h, w = mask.shape
-    x = projected[:, 0]
-    y = projected[:, 1]
-
-    # Check bounds (also handles NaN from invalid depth)
-    in_bounds = depth_valid & (x >= 0) & (x < w) & (y >= 0) & (y < h) & ~np.isnan(x) & ~np.isnan(y)
+    in_bounds, xi, yi = project_to_pixels(points, P, mask.shape, pixel_centre)
 
     in_mask = np.zeros(len(points), dtype=bool)
-    valid_idx = np.where(in_bounds)[0]
-
-    if len(valid_idx) > 0:
-        xi = x[valid_idx].astype(int)
-        yi = y[valid_idx].astype(int)
-        in_mask[valid_idx] = mask[yi, xi]
+    in_mask[in_bounds] = mask[yi[in_bounds], xi[in_bounds]]
 
     return in_bounds, in_mask
 
@@ -222,6 +250,7 @@ def compute_visibility_count(
 
     # Use mask_names from cameras dict if available (SfMData format)
     mask_names = cameras.get("mask_names")
+    pixel_centre = cameras.get("pixel_centre", PIXEL_CENTRE_TRUNCATE)
 
     for view_idx in iterator:
         mask_path = None
@@ -243,9 +272,9 @@ def compute_visibility_count(
         camera_center = camera_centers[view_idx]
 
         if use_masks:
-            _, in_view = check_points_in_mask(points, P, mask, dilation_radius)
+            _, in_view = check_points_in_mask(points, P, mask, dilation_radius, pixel_centre)
         else:
-            in_view = check_points_in_bounds(points, P, mask.shape)
+            in_view = check_points_in_bounds(points, P, mask.shape, pixel_centre)
 
         sel = np.flatnonzero(in_view)
         for s in range(0, len(sel), ray_chunk):
@@ -326,6 +355,7 @@ def filter_by_visibility(
     image_shapes = []
 
     mask_names = cameras.get("mask_names")
+    pixel_centre = cameras.get("pixel_centre", PIXEL_CENTRE_TRUNCATE)
     for view_idx in range(n_views):
         mask_path = None
         if mask_names is not None:
@@ -368,7 +398,7 @@ def filter_by_visibility(
         if image_shapes[view_idx] is None:
             continue
         P = cameras["P"][view_idx]
-        in_bounds = check_points_in_bounds(vertices, P, image_shapes[view_idx])
+        in_bounds = check_points_in_bounds(vertices, P, image_shapes[view_idx], pixel_centre)
         outside_all_images[in_bounds] = False
 
     inside_any_image = ~outside_all_images
@@ -391,7 +421,8 @@ def filter_by_visibility(
                 continue
 
             P = cameras["P"][view_idx]
-            in_bounds, in_mask = check_points_in_mask(vertices, P, masks[view_idx], dilation_radius=0)
+            in_bounds, in_mask = check_points_in_mask(vertices, P, masks[view_idx], dilation_radius=0,
+                                                      pixel_centre=pixel_centre)
 
             # Keep if: (outside this view's bounds) OR (inside this view's mask)
             keep_this_view = ~in_bounds | in_mask
@@ -415,9 +446,10 @@ def filter_by_visibility(
             continue
         P = cameras["P"][view_idx]
         if use_masks and masks[view_idx] is not None:
-            _, in_view = check_points_in_mask(vertices, P, masks[view_idx], dilation_radius=0)
+            _, in_view = check_points_in_mask(vertices, P, masks[view_idx], dilation_radius=0,
+                                              pixel_centre=pixel_centre)
         else:
-            in_view = check_points_in_bounds(vertices, P, image_shapes[view_idx])
+            in_view = check_points_in_bounds(vertices, P, image_shapes[view_idx], pixel_centre)
         in_view_all_views[view_idx] = in_view
 
     # Compute ray visibility for all views
@@ -551,6 +583,7 @@ def filter_by_issue_watertight(
     if show_progress:
         print(f"  [watertight] processing {len(issue_mask_paths)} issue masks over {n_views} views")
 
+    pixel_centre = cameras.get("pixel_centre", PIXEL_CENTRE_TRUNCATE)
     counts = np.zeros(n, dtype=np.int32)
     iterator = enumerate(issue_mask_paths)
     if show_progress:
@@ -562,7 +595,7 @@ def filter_by_issue_watertight(
             continue
         mask = load_mask(mask_path)
         P = cameras["P"][view_idx]
-        _, in_mask = check_points_in_mask(vertices, P, mask, dilation_radius=0)
+        _, in_mask = check_points_in_mask(vertices, P, mask, dilation_radius=0, pixel_centre=pixel_centre)
 
         camera_center = camera_centers[view_idx]
         cam_dirs = camera_center - vertices
