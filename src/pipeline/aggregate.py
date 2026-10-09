@@ -10,6 +10,59 @@ from ..config import Config
 from ..core.metrics import compute_chamfer, compute_fscore_curve
 
 
+def discover_methods(config: Config) -> list[str]:
+    """List the evaluated methods on disk, for configs that leave `dataset.methods` empty.
+
+    Mirrors the watcher's selection (src/watcher/scanner.py): every `results_raw/`
+    under each object's eval root (outside `Groundtruth/`) names a method by its
+    path relative to that root, `dataset.exclude_methods` substrings are skipped,
+    and only combos with an `eval_results/metrics.json` count.
+
+    Returns:
+        Sorted, deduplicated method names across all objects.
+    """
+    found = set()
+    for obj in config.dataset.objects:
+        eval_root = config.get_eval_root(obj)
+        if not eval_root.exists():
+            continue
+        for results_raw in eval_root.rglob("results_raw"):
+            if not results_raw.is_dir() or "Groundtruth" in results_raw.parts:
+                continue
+            method = str(results_raw.parent.relative_to(eval_root))
+            if any(ex in method for ex in config.dataset.exclude_methods):
+                continue
+            if (config.get_eval_dir(obj, method) / "metrics.json").exists():
+                found.add(method)
+    return sorted(found)
+
+
+def _resolve_methods(config: Config, methods: list[str] | None) -> list[str]:
+    """Explicit argument > `dataset.methods` > methods discovered on disk."""
+    return methods or config.dataset.methods or discover_methods(config)
+
+
+def _to_builtin(obj):
+    """Recursively convert numpy scalars/arrays (and tuples) to JSON-native Python types."""
+    if isinstance(obj, dict):
+        return {str(k): _to_builtin(v) for k, v in obj.items()}
+    if isinstance(obj, (list, tuple)):
+        return [_to_builtin(v) for v in obj]
+    if isinstance(obj, np.ndarray):
+        return _to_builtin(obj.tolist())
+    if isinstance(obj, np.generic):
+        return obj.item()
+    if isinstance(obj, Path):
+        return str(obj)
+    return obj
+
+
+def _dump_json(obj, path: Path) -> None:
+    # Serialize fully before touching the file: a failure must not leave a truncated JSON.
+    text = json.dumps(_to_builtin(obj), indent=2)
+    path.write_text(text)
+
+
 def aggregate_global(
     config: Config,
     methods: list[str] | None = None,
@@ -26,7 +79,7 @@ def aggregate_global(
     Returns:
         Dictionary with per-method aggregated metrics.
     """
-    methods = methods or config.dataset.methods
+    methods = _resolve_methods(config, methods)
     results = {}
 
     for method in methods:
@@ -88,7 +141,7 @@ def aggregate_visibility(
     Returns:
         Dictionary with per-method, per-zone metrics.
     """
-    methods = methods or config.dataset.methods
+    methods = _resolve_methods(config, methods)
     grouping = grouping or config.aggregation.visibility_groups
     results = {}
 
@@ -171,7 +224,7 @@ def aggregate_curvature(
     Returns:
         Dictionary with per-method, per-category metrics.
     """
-    methods = methods or config.dataset.methods
+    methods = _resolve_methods(config, methods)
     thresholds = thresholds or config.aggregation.curvature_thresholds
     results = {}
 
@@ -188,8 +241,10 @@ def aggregate_curvature(
     all_curv = np.concatenate(all_curvatures)
 
     if thresholds is None:
-        low_thresh = np.percentile(all_curv, percentiles[0])
-        high_thresh = np.percentile(all_curv, percentiles[1])
+        # GT curvature ships as float32 -> np.percentile returns np.float32,
+        # which json.dump rejects: cast to builtin floats at the source.
+        low_thresh = float(np.percentile(all_curv, percentiles[0]))
+        high_thresh = float(np.percentile(all_curv, percentiles[1]))
         thresholds = {"concave": low_thresh, "convex": high_thresh}
 
     results["thresholds"] = thresholds
@@ -259,7 +314,7 @@ def aggregate_challenges(
     Returns:
         Dictionary with per-method, per-challenge metrics.
     """
-    methods = methods or config.dataset.methods
+    methods = _resolve_methods(config, methods)
     results = {}
 
     challenge_names = set()
@@ -321,6 +376,9 @@ def save_aggregated_results(
 ) -> None:
     """Save all aggregated results to JSON files.
 
+    Numpy scalars/arrays anywhere in the payloads are converted to builtin
+    types (a single np.float32 used to abort the whole save mid-way).
+
     Args:
         config: Pipeline configuration.
         global_metrics: Global aggregated metrics.
@@ -331,18 +389,11 @@ def save_aggregated_results(
     output_dir = config.paths.output_root / "aggregated"
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    if global_metrics:
-        with open(output_dir / "global_metrics.json", "w") as f:
-            json.dump(global_metrics, f, indent=2)
-
-    if visibility_metrics:
-        with open(output_dir / "visibility_metrics.json", "w") as f:
-            json.dump(visibility_metrics, f, indent=2)
-
-    if curvature_metrics:
-        with open(output_dir / "curvature_metrics.json", "w") as f:
-            json.dump(curvature_metrics, f, indent=2)
-
-    if challenge_metrics:
-        with open(output_dir / "challenge_metrics.json", "w") as f:
-            json.dump(challenge_metrics, f, indent=2)
+    for name, payload in (
+        ("global", global_metrics),
+        ("visibility", visibility_metrics),
+        ("curvature", curvature_metrics),
+        ("challenge", challenge_metrics),
+    ):
+        if payload:
+            _dump_json(payload, output_dir / f"{name}_metrics.json")

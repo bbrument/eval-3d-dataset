@@ -292,6 +292,7 @@ def aggregate(ctx, visibility_groups, curvature_thresholds):
         aggregate_visibility,
         aggregate_curvature,
         aggregate_challenges,
+        discover_methods,
         save_aggregated_results,
     )
 
@@ -300,17 +301,23 @@ def aggregate(ctx, visibility_groups, curvature_thresholds):
     vis_groups = json.loads(visibility_groups) if visibility_groups else None
     curv_thresh = json.loads(curvature_thresholds) if curvature_thresholds else None
 
+    # `methods: []` in the config means "whatever is evaluated on disk": discover once.
+    methods = config.dataset.methods or discover_methods(config)
+    if not methods:
+        raise click.ClickException("No evaluated method found (no eval_results/metrics.json)")
+    click.echo(f"Aggregating {len(methods)} methods over {len(config.dataset.objects)} objects")
+
     click.echo("Aggregating global metrics...")
-    global_metrics = aggregate_global(config)
+    global_metrics = aggregate_global(config, methods=methods)
 
     click.echo("Aggregating visibility metrics...")
-    visibility_metrics = aggregate_visibility(config, grouping=vis_groups)
+    visibility_metrics = aggregate_visibility(config, methods=methods, grouping=vis_groups)
 
     click.echo("Aggregating curvature metrics...")
-    curvature_metrics = aggregate_curvature(config, thresholds=curv_thresh)
+    curvature_metrics = aggregate_curvature(config, methods=methods, thresholds=curv_thresh)
 
     click.echo("Aggregating challenge metrics...")
-    challenge_metrics = aggregate_challenges(config)
+    challenge_metrics = aggregate_challenges(config, methods=methods)
 
     save_aggregated_results(
         config,
