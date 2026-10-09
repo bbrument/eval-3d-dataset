@@ -10,6 +10,7 @@ from scipy.spatial import cKDTree
 from ..config import Config
 from ..core.camera import load_cameras_auto
 from ..core.mesh import load_mesh
+from ..core.nearest import NearestPointIndex
 from ..core.colormap import (
     color_uniform,
     color_by_accuracy,
@@ -178,29 +179,27 @@ def visualize_method(
         elif exclude_mode == "remove":
             from ..core.mesh import filter_mesh_by_vertex_mask
             # Remove excluded faces from meshes
+            nearest_gt = NearestPointIndex(gt_pcd)
             if gt_mesh is not None:
-                tree = cKDTree(gt_pcd)
-                _, indices = tree.query(gt_mesh.vertices, k=1)
+                indices = nearest_gt.query(gt_mesh.vertices)
                 keep_mask = ~excluded_pcd[indices].astype(bool)
                 n_before = len(gt_mesh.vertices)
                 gt_mesh = filter_mesh_by_vertex_mask(gt_mesh, keep_mask)
                 print(f"  Removed excluded from GT mesh: {n_before} -> {len(gt_mesh.vertices)} vertices")
             if method_mesh is not None:
-                tree = cKDTree(gt_pcd)
-                _, indices = tree.query(method_mesh.vertices, k=1)
+                indices = nearest_gt.query(method_mesh.vertices)
                 keep_mask = ~excluded_pcd[indices].astype(bool)
                 n_before = len(method_mesh.vertices)
                 method_mesh = filter_mesh_by_vertex_mask(method_mesh, keep_mask)
                 print(f"  Removed excluded from method mesh: {n_before} -> {len(method_mesh.vertices)} vertices")
         else:
             # mode == "gray": pass masks to colormap functions
+            nearest_gt = NearestPointIndex(gt_pcd)
             if gt_mesh is not None:
-                tree = cKDTree(gt_pcd)
-                _, indices = tree.query(gt_mesh.vertices, k=1)
+                indices = nearest_gt.query(gt_mesh.vertices)
                 gt_excluded_mask = excluded_pcd[indices]
             if method_mesh is not None:
-                tree = cKDTree(gt_pcd)
-                _, indices = tree.query(method_mesh.vertices, k=1)
+                indices = nearest_gt.query(method_mesh.vertices)
                 method_excluded_mask = excluded_pcd[indices]
 
     print(f"Visualizing: {object_name}/{method_name} (exclude_mode={exclude_mode})")
