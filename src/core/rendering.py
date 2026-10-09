@@ -26,16 +26,20 @@ from tqdm import tqdm
 try:
     import pyrender
     PYRENDER_AVAILABLE = True
-except ImportError:
+    PYRENDER_IMPORT_ERROR = None
+except ImportError as _e:
+    # Also raised when pyrender is installed but the GL backend library
+    # (e.g. libOSMesa for PYOPENGL_PLATFORM=osmesa) cannot be loaded: keep the reason.
     PYRENDER_AVAILABLE = False
+    PYRENDER_IMPORT_ERROR = f"{type(_e).__name__}: {_e}"
 
 
 def check_pyrender():
     """Raise ImportError if pyrender is not available."""
     if not PYRENDER_AVAILABLE:
         raise ImportError(
-            "pyrender required for visualization. "
-            "Install with: pip install pyrender PyOpenGL"
+            f"pyrender required for visualization ({PYRENDER_IMPORT_ERROR}). "
+            "Install with: uv pip install -e '.[visualization]'"
         )
 
 

@@ -1,6 +1,7 @@
 """Visualization pipeline: render meshes with metric coloring."""
 
 import json
+import os
 from pathlib import Path
 
 import numpy as np
@@ -236,8 +237,11 @@ def visualize_method(
         )
         print(f"    Computed bboxes for {len(crop_bboxes)} views")
 
-        with open(bbox_path, "w") as f:
-            json.dump({str(k): [int(x) for x in v] for k, v in crop_bboxes.items()}, f, indent=2)
+        # Atomic write: the viz jobs of one object run concurrently and may read bbox.json
+        # while another job (re)writes it; a truncated read would lock the combo.
+        tmp_bbox = bbox_path.with_name(f"{bbox_path.name}.tmp{os.getpid()}")
+        tmp_bbox.write_text(json.dumps({str(k): [int(x) for x in v] for k, v in crop_bboxes.items()}, indent=2))
+        os.replace(tmp_bbox, bbox_path)
         print(f"    Saved bboxes to {bbox_path}")
 
         results["uniform_gt"] = list(gt_output.glob("view_*.png"))
