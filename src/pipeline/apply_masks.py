@@ -56,7 +56,7 @@ def apply_visibility_masks(
         method_name: Method name.
         force: Overwrite existing files.
     """
-    gt_dir = config.get_gt_dir(object_name)
+    gt_dir = config.get_gt_artifacts_dir(object_name)
     eval_dir = config.get_eval_dir(object_name, method_name)
     zones_dir = eval_dir / "zones" / "visibility"
 
@@ -108,7 +108,7 @@ def apply_curvature_masks(
         method_name: Method name.
         force: Overwrite existing files.
     """
-    gt_dir = config.get_gt_dir(object_name)
+    gt_dir = config.get_gt_artifacts_dir(object_name)
     eval_dir = config.get_eval_dir(object_name, method_name)
     zones_dir = eval_dir / "zones" / "curvature"
 
@@ -145,7 +145,7 @@ def apply_challenge_masks(
         method_name: Method name.
         force: Overwrite existing files.
     """
-    gt_dir = config.get_gt_dir(object_name)
+    gt_dir = config.get_gt_artifacts_dir(object_name)
     eval_dir = config.get_eval_dir(object_name, method_name)
     zones_dir = eval_dir / "zones" / "challenges"
 
@@ -198,7 +198,7 @@ def apply_all_masks(
         challenges: Apply challenge masks.
         force: Overwrite existing files.
     """
-    gt_dir = config.get_gt_dir(object_name)
+    gt_dir = config.get_gt_artifacts_dir(object_name)
 
     if visibility:
         vis_path = gt_dir / "attributes" / "visibility_count.npy"

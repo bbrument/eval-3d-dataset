@@ -100,7 +100,7 @@ def visualize_method(
     cleaned_mesh_path = config.get_cleaned_mesh_path(object_name, method_name)
     cameras_path = config.get_cameras_path(object_name, method_name)
     eval_dir = config.get_eval_dir(object_name, method_name)
-    gt_dir = config.get_gt_dir(object_name)
+    gt_dir = config.get_gt_artifacts_dir(object_name)
 
     if exclude_mode is None:
         exclude_mode = config.visualization.exclude_mode
@@ -109,7 +109,9 @@ def visualize_method(
 
     vis_suffix = "visualizations_remove" if exclude_mode == "remove" else "visualizations"
     vis_dir = method_dir / vis_suffix
-    gt_vis_dir = gt_dir / vis_suffix
+    # GT renders/bbox.json are DERIVED: write them to the workspace Groundtruth dir,
+    # never into gt_dir, which may be the (read-only by contract) published GT kit.
+    gt_vis_dir = config.get_gt_dir(object_name) / vis_suffix
 
     # Use config defaults if not specified
     if view_indices is None:

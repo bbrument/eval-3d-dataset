@@ -177,7 +177,7 @@ def aggregate_curvature(
 
     all_curvatures = []
     for obj in config.dataset.objects:
-        gt_dir = config.get_gt_dir(obj)
+        gt_dir = config.get_gt_artifacts_dir(obj)
         curv_path = gt_dir / "attributes" / "curvature_values.npy"
         if curv_path.exists():
             all_curvatures.append(np.load(curv_path))
@@ -264,7 +264,7 @@ def aggregate_challenges(
 
     challenge_names = set()
     for obj in config.dataset.objects:
-        gt_dir = config.get_gt_dir(obj)
+        gt_dir = config.get_gt_artifacts_dir(obj)
         challenges_dir = gt_dir / "challenges"
         if challenges_dir.exists():
             for p in challenges_dir.glob("*.npy"):

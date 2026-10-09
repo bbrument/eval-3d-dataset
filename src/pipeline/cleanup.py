@@ -62,7 +62,7 @@ def cleanup_mesh(
 
     if not cameras_path.exists():
         raise FileNotFoundError(f"Cameras not found: {cameras_path}")
-    if not masks_dir.exists():
+    if config.cleanup.use_masks and not masks_dir.exists():
         raise FileNotFoundError(f"Masks directory not found: {masks_dir}")
 
     # Apply z_threshold FIRST (before visibility) - matching reference implementation
@@ -93,28 +93,25 @@ def cleanup_mesh(
 
     # Robin's watertight culling: additionally drop visible, front-facing vertices that
     # project into the per-view hole-region masks (surfaces filling the GT's non-watertight
-    # holes). Gated on cleanup.watertight_culling AND the masks dir existing (fail-open to
-    # a plain clean if the masks are absent, but log it loudly).
-    if config.cleanup.watertight_culling:
-        issue_dir = config.get_masks_issue_watertight_dir(object_name)
-        if issue_dir.exists() and any(issue_dir.glob("*.png")):
-            print(f"  Watertight culling using: {issue_dir}")
-            issue_counts = filter_by_issue_watertight(
-                mesh.vertices,
-                mesh,
-                cameras,
-                issue_dir,
-                visible_mask=visible_mask,
-                orientation_ratio_threshold=config.cleanup.watertight_orientation_ratio,
-                show_progress=True,
-            )
-            keep_mask = visible_mask & (issue_counts == 0)
-            n_culled = n_visible - int(np.sum(keep_mask))
-            pct = (100.0 * n_culled / n_visible) if n_visible else 0.0
-            print(f"  Watertight culling removed {n_culled} extra vertices "
-                  f"({pct:.2f}% of the {n_visible} visible)")
-        else:
-            print(f"  WARNING: watertight_culling=True but no issue masks at {issue_dir} - skipping cull")
+    # Optional third mask family. Its presence is the feature flag: published
+    # kits without it retain the ordinary silhouette cleanup.
+    issue_dir = config.get_watertight_masks_dir(object_name)
+    if issue_dir.exists() and any(issue_dir.glob("*.png")):
+        print(f"  Watertight culling using: {issue_dir}")
+        issue_counts = filter_by_issue_watertight(
+            mesh.vertices,
+            mesh,
+            cameras,
+            issue_dir,
+            visible_mask=visible_mask,
+            orientation_ratio_threshold=config.cleanup.watertight_orientation_ratio,
+            show_progress=True,
+        )
+        keep_mask = visible_mask & (issue_counts == 0)
+        n_culled = n_visible - int(np.sum(keep_mask))
+        pct = (100.0 * n_culled / n_visible) if n_visible else 0.0
+        print(f"  Watertight culling removed {n_culled} extra vertices "
+              f"({pct:.2f}% of the {n_visible} visible)")
 
     n_kept = int(np.sum(keep_mask))
     n_removed = len(mesh.vertices) - n_kept

@@ -16,6 +16,10 @@ class DatasetConfig(BaseModel):
     exclude_methods: list[str] = Field(default_factory=list, description="Method name substrings to exclude from scanning")
     normals_priors: list[str] = Field(default_factory=list, description="List of normals prior methods")
     num_views: int = Field(default=84, description="Maximum number of camera views")
+    object_aliases: dict[str, str] = Field(
+        default_factory=dict,
+        description="Optional mapping from workspace object names to published/source names",
+    )
 
 
 class PathsConfig(BaseModel):
@@ -34,6 +38,22 @@ class PathsConfig(BaseModel):
     data_root: str = Field(description="Root directory template for camera files and masks")
     eval_root: Optional[str] = Field(default=None, description="Eval directory template for GT and method results")
     gt_root: Optional[str] = Field(default=None, description="Read-only source of the RAW ground truth (gt.ply + challenges_raw/). When set, preprocess-gt/-challenges read the GT mesh and raw challenge sources from here, while all DERIVED artefacts (gt_cleaned.ply, gt_pcd.npy, attributes/, challenges/) are written under eval_root/{object}/Groundtruth/. When unset, the raw GT is read from that same Groundtruth dir (legacy behaviour). Supports {object}.")
+    gt_artifacts_root: Optional[str] = Field(
+        default=None,
+        description="Read-only GT evaluation artefacts (gt_pcd.npy, attributes/, challenges/). Defaults to the writable Groundtruth workspace.",
+    )
+    eval_cameras: Optional[str] = Field(
+        default=None,
+        description="Explicit evaluation camera file template. Defaults to camera discovery under data_root.",
+    )
+    eval_masks: Optional[str] = Field(
+        default=None,
+        description="Explicit evaluation silhouette directory template. Defaults to masks/ under data_root.",
+    )
+    watertight_masks: Optional[str] = Field(
+        default=None,
+        description="Optional watertight-issue mask directory; culling is enabled automatically when PNG masks exist.",
+    )
     output_root: Optional[Path] = Field(default=None, description="Output directory for generated scripts and aggregated results")
 
     @model_validator(mode="after")
@@ -55,7 +75,6 @@ class CleanupConfig(BaseModel):
     dilation_ref_n_pixels: int = Field(default=9568 * 6376, gt=0, description="Auto-dilation reference resolution in total pixels (H*W). Default = 9568x6376 (Martine full res). Auto radius = round(dilation_ref_px * sqrt(mask_n_pixels / dilation_ref_n_pixels))")
     z_threshold: Optional[float] = Field(default=None, description="Remove points below this z")
     use_masks: bool = Field(default=True, description="Use 2D masks for visibility filtering")
-    watertight_culling: bool = Field(default=False, description="Robin's mask-based culling: remove visible, front-facing vertices that project into the per-view watertight-issue masks (surfaces filling the GT holes). Requires <GT>/masks_issue_watertight/.")
     watertight_orientation_ratio: float = Field(default=0.7, description="If < this fraction of sampled visible points face camera 0, flip normals before watertight_culling")
 
     @field_validator("dilation_radius")
@@ -222,8 +241,10 @@ class Config(BaseModel):
             normals_priors = self.dataset.normals_priors[0]
 
         # Resolve template
+        source_object = self.dataset.object_aliases.get(object_name, object_name)
         path_str = template.format(
             object=object_name,
+            source_object=source_object,
             normals_priors=normals_priors if normals_priors else "",
             method=method_name if method_name else ""
         )
@@ -266,18 +287,34 @@ class Config(BaseModel):
             return self._resolve_template(self.paths.gt_root, object_name)
         return self.get_gt_dir(object_name)
 
+    def get_gt_artifacts_dir(self, object_name: str) -> Path:
+        """Get the read-only GT artefacts used for scoring.
+
+        Published datasets can ship an exact sampled GT and its point-aligned
+        attributes. Legacy configurations continue to read the writable
+        ``Groundtruth`` workspace.
+        """
+        if self.paths.gt_artifacts_root:
+            return self._resolve_template(self.paths.gt_artifacts_root, object_name)
+        return self.get_gt_dir(object_name)
+
     def get_challenges_raw_dir(self, object_name: str) -> Path:
         """Get the raw challenge-source directory (read-only, under gt_source)."""
         return self.get_gt_source_dir(object_name) / "challenges_raw"
 
-    def get_masks_issue_watertight_dir(self, object_name: str) -> Path:
+    def get_watertight_masks_dir(self, object_name: str) -> Path:
         """Get the watertight-issue masks directory (per-view hole-region masks).
 
-        Ported from Robin's pipeline: if this directory exists and
-        ``cleanup.watertight_culling`` is on, cleanup additionally removes
-        reconstruction vertices that *fill in* the non-watertight holes of the GT.
+        When PNGs exist here, cleanup automatically removes reconstruction
+        vertices that fill non-watertight holes of the GT.
         """
-        return self.get_gt_source_dir(object_name) / "masks_issue_watertight"
+        if self.paths.watertight_masks:
+            return self._resolve_template(self.paths.watertight_masks, object_name)
+        return self.get_gt_source_dir(object_name) / "masks_watertight"
+
+    # Compatibility for callers predating the published-kit naming.
+    def get_masks_issue_watertight_dir(self, object_name: str) -> Path:
+        return self.get_watertight_masks_dir(object_name)
 
     def get_gt_mesh_path(self, object_name: str, cleaned: bool = False) -> Path:
         """Get the GT mesh path by searching for .ply files in Groundtruth directory.
@@ -326,6 +363,9 @@ class Config(BaseModel):
         Searches for camera files in priority order:
         cameras.npz, sfm.json, cameras.json, then any .sfm file.
         """
+        if self.paths.eval_cameras:
+            return self._resolve_template(self.paths.eval_cameras, object_name, method_name)
+
         data_root = self.get_data_root(object_name, method_name)
 
         # Search in priority order
@@ -349,6 +389,8 @@ class Config(BaseModel):
 
     def get_masks_dir(self, object_name: str, method_name: str = None) -> Path:
         """Get the masks directory from data_root."""
+        if self.paths.eval_masks:
+            return self._resolve_template(self.paths.eval_masks, object_name, method_name)
         # Search for "masks" first (AliceVision convention), then "mask"
         masks_dir = self.get_data_root(object_name, method_name) / "masks"
         if masks_dir.exists():

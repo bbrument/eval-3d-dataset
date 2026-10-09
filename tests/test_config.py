@@ -266,6 +266,29 @@ class TestConfig:
         masks_dir = config.get_masks_dir("obj1")
         assert str(masks_dir).endswith("mask")
 
+    def test_published_eval_inputs_and_artifacts(self):
+        config = Config(
+            dataset=DatasetConfig(
+                name="test",
+                objects=["01_rock"],
+                object_aliases={"01_rock": "rock"},
+            ),
+            paths=PathsConfig(
+                data_root="/published/{source_object}/mvs/d1",
+                eval_root="/runs/{object}",
+                gt_root="/published/{source_object}/gt",
+                gt_artifacts_root="/published/{source_object}/gt",
+                eval_cameras="/published/{source_object}/gt/eval_cameras.sfm",
+                eval_masks="/published/{source_object}/gt/masks_eval",
+            ),
+        )
+
+        assert str(config.get_eval_root("01_rock")) == "/runs/01_rock"
+        assert str(config.get_gt_source_dir("01_rock")) == "/published/rock/gt"
+        assert str(config.get_gt_artifacts_dir("01_rock")) == "/published/rock/gt"
+        assert str(config.get_cameras_path("01_rock")) == "/published/rock/gt/eval_cameras.sfm"
+        assert str(config.get_masks_dir("01_rock")) == "/published/rock/gt/masks_eval"
+
 
 class TestLoadConfig:
     """Tests for load_config function."""
@@ -347,4 +370,3 @@ class TestLoadConfig:
         assert config.cleanup.dilation_radius == 10
         assert config.evaluation.max_dist == 3.0
         assert config.aggregation.visibility_groups["low"] == [1, 10]
-

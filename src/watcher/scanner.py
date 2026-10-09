@@ -472,7 +472,7 @@ class SlurmSubmitter:
         Returns:
             Tuple of (is_ready, message).
         """
-        gt_dir = self.config.get_gt_dir(object_name)
+        gt_dir = self.config.get_gt_artifacts_dir(object_name)
         gt_pcd = gt_dir / "gt_pcd.npy"
 
         if not gt_pcd.exists():
