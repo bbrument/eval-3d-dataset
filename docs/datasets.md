@@ -9,9 +9,10 @@ Skoltech3D (*skoltech3d*), and applies unchanged to any dataset that follows the
 
 ## Bundled configurations
 
-These are the live configs used in practice. They may contain machine-specific absolute
-paths — copy one and repoint `paths:` before use. `config/default.yaml` holds the base
-defaults and documents every available key.
+These are the configs used in practice, committed with placeholder paths — copy one and
+repoint `paths:` before use. Machine-specific copies with real paths live next to them as
+`config/<name>.local.yaml`, which are git-ignored and never committed. `config/default.yaml`
+holds the base defaults and documents every available key.
 
 | config | dataset |
 |---|---|

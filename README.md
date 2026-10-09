@@ -53,7 +53,7 @@ python -m src.cli -c config/martine.yaml --help  # equivalent, without installin
 
 ```bash
 CFG=config/martine.yaml     # or config/skoltech3d.yaml
-eval-pipeline -c $CFG preprocess-gt --clean-gt   # clean + sample the GT mesh
+eval-pipeline -c $CFG preprocess-gt --clean-gt   # clean + sample the GT mesh (Martine: skip, gt/ ships it)
 eval-pipeline -c $CFG cleanup                    # carve reconstructions to the silhouettes
 eval-pipeline -c $CFG evaluate                   # Chamfer, coverage, F-score
 eval-pipeline -c $CFG curves -n 100              # dense PR curves
