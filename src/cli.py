@@ -292,6 +292,7 @@ def aggregate(ctx, visibility_groups, curvature_thresholds):
         aggregate_visibility,
         aggregate_curvature,
         aggregate_challenges,
+        discover_methods,
         save_aggregated_results,
     )
 
@@ -300,17 +301,23 @@ def aggregate(ctx, visibility_groups, curvature_thresholds):
     vis_groups = json.loads(visibility_groups) if visibility_groups else None
     curv_thresh = json.loads(curvature_thresholds) if curvature_thresholds else None
 
+    # `methods: []` in the config means "whatever is evaluated on disk": discover once.
+    methods = config.dataset.methods or discover_methods(config)
+    if not methods:
+        raise click.ClickException("No evaluated method found (no eval_results/metrics.json)")
+    click.echo(f"Aggregating {len(methods)} methods over {len(config.dataset.objects)} objects")
+
     click.echo("Aggregating global metrics...")
-    global_metrics = aggregate_global(config)
+    global_metrics = aggregate_global(config, methods=methods)
 
     click.echo("Aggregating visibility metrics...")
-    visibility_metrics = aggregate_visibility(config, grouping=vis_groups)
+    visibility_metrics = aggregate_visibility(config, methods=methods, grouping=vis_groups)
 
     click.echo("Aggregating curvature metrics...")
-    curvature_metrics = aggregate_curvature(config, thresholds=curv_thresh)
+    curvature_metrics = aggregate_curvature(config, methods=methods, thresholds=curv_thresh)
 
     click.echo("Aggregating challenge metrics...")
-    challenge_metrics = aggregate_challenges(config)
+    challenge_metrics = aggregate_challenges(config, methods=methods)
 
     save_aggregated_results(
         config,
@@ -350,12 +357,18 @@ def aggregate(ctx, visibility_groups, curvature_thresholds):
 @click.pass_context
 def visualize(ctx, object_name, method_name, metrics, views, scale, cmap, max_dist, crop, crop_margin, exclude_mode, integrated_colorbar, force):
     """Generate metric visualization renders."""
-    from .core.rendering import PYRENDER_AVAILABLE
+    from .core import rendering
     from .pipeline.visualize import visualize_method
 
-    if not PYRENDER_AVAILABLE:
-        click.echo("Error: pyrender not installed. Install with: pip install pyrender PyOpenGL")
-        return
+    if not rendering.PYRENDER_AVAILABLE:
+        # Environment problem, not a per-combo failure: no .viz_failed lock, but a non-zero
+        # exit so SLURM marks the job FAILED instead of COMPLETED with nothing rendered.
+        raise click.ClickException(
+            f"pyrender unavailable ({rendering.PYRENDER_IMPORT_ERROR}). "
+            "Install the 'visualization' extra into this venv "
+            "(uv pip install -e '.[visualization]') and, headless, set PYOPENGL_PLATFORM=osmesa "
+            "with libOSMesa on LD_LIBRARY_PATH (on SLURM: execution.slurm.setup_script, see docs/cluster.md)."
+        )
 
     config = ctx.obj["config"]
     objects = [object_name] if object_name else config.dataset.objects
@@ -402,8 +415,13 @@ def visualize(ctx, object_name, method_name, metrics, views, scale, cmap, max_di
                     exclude_mode=exclude_mode,
                     integrated_colorbar=integrated_colorbar,
                 )
-            except FileNotFoundError as e:
-                click.echo(f"Skipping {obj}/{method}: {e}")
+            except ImportError as e:
+                # Missing dependency (e.g. fast_simplification for decimation): an environment
+                # error shared by every combo -> fail loudly, but do not lock this combo.
+                raise click.ClickException(
+                    f"{obj}/{method}: missing dependency ({type(e).__name__}: {e}); "
+                    "install the 'visualization' extra into this venv"
+                ) from e
             except Exception as e:
                 lock_path.parent.mkdir(parents=True, exist_ok=True)
                 lock_path.write_text(f"{datetime.now().isoformat()}: {e}\n")

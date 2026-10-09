@@ -52,6 +52,7 @@ config/.*_state.json
 
 # Local machine-specific config overrides (real paths); published configs use placeholders
 config/*.local.yaml
+config/*.local.sh
 
 # Metrics-fix backup snapshots (local only)
 .metrics_fix_backups/

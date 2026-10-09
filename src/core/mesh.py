@@ -93,21 +93,92 @@ def filter_mesh_by_vertex_mask(mesh: trimesh.Trimesh, vertex_mask: np.ndarray) -
     return new_mesh
 
 
-def compute_vertex_curvature(mesh: trimesh.Trimesh, radius: float | None = None) -> np.ndarray:
+# Shared read-only state of the curvature workers (inherited through fork, never pickled).
+_CURVATURE_SHARED: dict = {}
+
+
+def _curvature_batch(ids: np.ndarray, radius: float, workers: int = -1) -> tuple[np.ndarray, np.ndarray]:
+    """Quadric-fit curvature of one batch of vertex ids -> (ids with >= 6 neighbours, values)."""
+    from itertools import chain
+
+    V, normals, tree = _CURVATURE_SHARED["V"], _CURVATURE_SHARED["normals"], _CURVATURE_SHARED["tree"]
+    neighbors = tree.query_ball_point(V[ids], r=radius, workers=workers)
+    counts = np.fromiter((len(x) for x in neighbors), dtype=np.int64, count=len(neighbors))
+    keep = counts >= 6
+    if not keep.any():
+        return ids[:0], np.zeros(0)
+    ids, counts = ids[keep], counts[keep]
+    flat = np.fromiter(chain.from_iterable(neighbors[i] for i in np.flatnonzero(keep)),
+                       dtype=np.int64, count=int(counts.sum()))
+    owner = np.repeat(np.arange(len(ids)), counts)
+
+    normal = normals[ids]
+    tangent1 = np.where((np.abs(normal[:, 0]) < 0.9)[:, None],
+                        np.cross(normal, [1.0, 0.0, 0.0]), np.cross(normal, [0.0, 1.0, 0.0]))
+    tangent1 /= np.linalg.norm(tangent1, axis=1, keepdims=True)
+    tangent2 = np.cross(normal, tangent1)
+
+    pts = V[flat] - V[ids][owner]
+    u = np.einsum("ij,ij->i", pts, tangent1[owner])
+    v = np.einsum("ij,ij->i", pts, tangent2[owner])
+    w = np.einsum("ij,ij->i", pts, normal[owner])
+    f = (u * u, u * v, v * v)
+
+    seg = np.concatenate(([0], np.cumsum(counts)[:-1]))
+    ata = np.empty((len(ids), 3, 3))
+    for r in range(3):
+        for c in range(r, 3):
+            ata[:, r, c] = ata[:, c, r] = np.add.reduceat(f[r] * f[c], seg)
+    atw = np.stack([np.add.reduceat(f[r] * w, seg) for r in range(3)], axis=1)
+    a, b, c = np.einsum("bij,bj->bi", np.linalg.pinv(ata), atw).T
+
+    tr = 2 * a + 2 * c
+    det = 4 * a * c - b ** 2
+    disc = np.sqrt(np.maximum(0, tr ** 2 - 4 * det))
+    k1 = (tr + disc) / 2
+    k2 = (tr - disc) / 2
+    return ids, np.where(np.abs(k1) > np.abs(k2), k1, k2)
+
+
+def _curvature_batch_star(args):
+    return _curvature_batch(*args)
+
+
+def compute_vertex_curvature(
+    mesh: trimesh.Trimesh,
+    radius: float | None = None,
+    vertex_indices: np.ndarray | None = None,
+    batch_size: int = 20_000,
+    n_jobs: int = 1,
+) -> np.ndarray:
     """Compute maximum principal curvature at each vertex.
 
-    Uses a neighborhood-based estimation to highlight concave/convex regions.
-    If radius is None, it defaults to 5x the average edge length.
+    Uses a neighborhood-based estimation to highlight concave/convex regions:
+    for each vertex, the quadric w = a u^2 + b uv + c v^2 is least-squares fitted
+    (in its tangent frame) to ALL vertices within ``radius``; vertices with fewer
+    than 6 neighbours get 0. If radius is None, it defaults to 5x the average
+    edge length.
+
+    Vectorised: each batch of vertices is solved at once through the 3x3 normal
+    equations and a pseudo-inverse (= the minimum-norm least-squares solution of
+    the former per-vertex ``np.linalg.lstsq`` loop, same values). The cost is
+    ~N_vertices x neighbours (fixed radius): ~1e11 vertex-neighbour pairs for the
+    densest scans (12_assiette: 0.05 mm edges, 7 400 neighbours/vertex, ~11 h on
+    one core), hence ``n_jobs`` worker processes over the batches (same values).
 
     Args:
         mesh: Input mesh.
         radius: Spatial radius for neighborhood search.
+        vertex_indices: Only compute these vertices (others are 0). Default: all.
+        batch_size: Vertices per vectorised batch (memory ~ batch x neighbours
+            x ~150 B per worker).
+        n_jobs: Worker processes (fork). 1 = in-process.
 
     Returns:
         Array of signed maximum principal curvature values, shape (N,).
     """
     from scipy.spatial import cKDTree
-    
+
     n_vertices = len(mesh.vertices)
     if n_vertices == 0:
         return np.array([], dtype=np.float32)
@@ -120,53 +191,30 @@ def compute_vertex_curvature(mesh: trimesh.Trimesh, radius: float | None = None)
         radius = avg_edge * 5.0
         print(f"  Estimating curvature with radius={radius:.3f} mm (5x avg edge)")
 
-    tree = cKDTree(mesh.vertices)
+    V = np.asarray(mesh.vertices, dtype=np.float64)
+    _CURVATURE_SHARED.update(V=V, normals=np.asarray(mesh.vertex_normals, dtype=np.float64), tree=cKDTree(V))
+    todo = np.arange(n_vertices) if vertex_indices is None else np.unique(np.asarray(vertex_indices))
+    batches = [todo[s:s + batch_size] for s in range(0, len(todo), batch_size)]
     curvature = np.zeros(n_vertices, dtype=np.float32)
-    normals = mesh.vertex_normals
 
-    batch_size = 500_000
-    n_batches = (n_vertices + batch_size - 1) // batch_size
+    def report(i):
+        if len(batches) > 1 and (i % 50 == 0 or i == len(batches) - 1):
+            print(f"  Curvature batch {i+1}/{len(batches)}", flush=True)
 
-    for batch_idx in range(n_batches):
-        start = batch_idx * batch_size
-        end = min(start + batch_size, n_vertices)
-        if n_batches > 1:
-            print(f"  Batch {batch_idx+1}/{n_batches} (vertices {start:,}-{end:,})")
-
-        neighbors_list = tree.query_ball_point(mesh.vertices[start:end], r=radius, workers=-1)
-
-        for local_i, idx in enumerate(neighbors_list):
-            if len(idx) < 6:
-                continue
-
-            i = start + local_i
-            pts = mesh.vertices[idx]
-            center = mesh.vertices[i]
-            pts_centered = pts - center
-
-            normal = normals[i]
-            if abs(normal[0]) < 0.9:
-                tangent1 = np.cross(normal, [1, 0, 0])
-            else:
-                tangent1 = np.cross(normal, [0, 1, 0])
-            tangent1 /= np.linalg.norm(tangent1)
-            tangent2 = np.cross(normal, tangent1)
-
-            u = pts_centered @ tangent1
-            v = pts_centered @ tangent2
-            w = pts_centered @ normal
-
-            A = np.column_stack([u**2, u*v, v**2])
-            try:
-                params, _, _, _ = np.linalg.lstsq(A, w, rcond=None)
-                a, b, c = params
-                tr = 2*a + 2*c
-                det = 4*a*c - b**2
-                disc = max(0, tr**2 - 4*det)
-                k1 = (tr + np.sqrt(disc)) / 2
-                k2 = (tr - np.sqrt(disc)) / 2
-                curvature[i] = k1 if abs(k1) > abs(k2) else k2
-            except np.linalg.LinAlgError:
-                continue
+    try:
+        if n_jobs <= 1:
+            for i, ids in enumerate(batches):
+                report(i)
+                done, values = _curvature_batch(ids, radius)
+                curvature[done] = values
+        else:
+            import multiprocessing as mp
+            with mp.get_context("fork").Pool(n_jobs) as pool:
+                jobs = ((ids, radius, 1) for ids in batches)
+                for i, (done, values) in enumerate(pool.imap_unordered(_curvature_batch_star, jobs)):
+                    report(i)
+                    curvature[done] = values
+    finally:
+        _CURVATURE_SHARED.clear()
 
     return curvature

@@ -45,7 +45,7 @@ def recompute_metrics(
         Dict with metrics, or None if distances don't exist or the cache is stale.
     """
     eval_dir = config.get_eval_dir(object_name, method_name)
-    gt_dir = config.get_gt_dir(object_name)
+    gt_dir = config.get_gt_artifacts_dir(object_name)
     distances_dir = eval_dir / "distances"
 
     d2g_path = distances_dir / "data2gt_dist.npy"

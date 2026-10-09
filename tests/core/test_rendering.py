@@ -13,9 +13,10 @@ def test_offscreen_renderer_basic():
     if not PYRENDER_AVAILABLE:
         pytest.skip("pyrender not available")
 
-    # Create simple triangle
+    # Create simple triangle, wound to FACE the camera (normal -Z, toward an OpenCV camera at
+    # the origin looking +Z): pyrender culls back faces, so [0, 1, 2] rendered nothing.
     vertices = np.array([[0, 0, 1], [1, 0, 1], [0.5, 1, 1]], dtype=np.float32)
-    faces = np.array([[0, 1, 2]])
+    faces = np.array([[0, 2, 1]])
     mesh = trimesh.Trimesh(vertices=vertices, faces=faces)
     mesh.visual.vertex_colors = np.array(
         [[255, 0, 0, 255], [0, 255, 0, 255], [0, 0, 255, 255]], dtype=np.uint8
@@ -102,7 +103,8 @@ def test_render_views(tmp_path):
     }
 
     output_dir = tmp_path / "renders"
-    paths = render_views(mesh, cameras, view_indices=[0], output_dir=output_dir, scale=1.0)
+    # render_views returns (paths, crop_bboxes) since the crop-bbox sharing.
+    paths, _ = render_views(mesh, cameras, view_indices=[0], output_dir=output_dir, scale=1.0)
 
     assert len(paths) == 1
     assert paths[0].exists()

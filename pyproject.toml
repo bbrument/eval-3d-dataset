@@ -24,6 +24,7 @@ dependencies = [
 visualization = [
     "pyrender>=0.1.45",
     "PyOpenGL>=3.1.0",
+    "fast-simplification>=0.1.13",  # trimesh simplify_quadric_decimation (GT/method mesh decimation)
 ]
 dev = [
     "pytest>=7.0.0",
@@ -32,6 +33,11 @@ dev = [
 
 [project.scripts]
 eval-pipeline = "src.cli:main"
+
+[tool.uv]
+# pyrender 0.1.45 pins PyOpenGL==3.1.0, whose OpenGL.osmesa lacks OSMesaCreateContextAttribs
+# (headless OSMesa rendering on the SLURM nodes) -> override, as `uv pip install -e .[visualization]` honours it.
+override-dependencies = ["pyopengl>=3.1.5"]
 
 [build-system]
 requires = ["setuptools>=61.0"]

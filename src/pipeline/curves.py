@@ -63,7 +63,7 @@ def compute_curves(
     # carrying an excluded.npy — and `curves` runs *after* `evaluate`, so it was the
     # inconsistent version that survived on disk.
     idx_path = distances_dir / "data2gt_idx.npy"
-    gt_dir = config.get_gt_dir(object_name)
+    gt_dir = config.get_gt_artifacts_dir(object_name)
     exclude, _applied = load_gt_exclude(
         gt_dir, n_gt=len(dist_gt2data), extra_exclude=extra_exclude
     )

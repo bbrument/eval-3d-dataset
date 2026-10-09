@@ -40,7 +40,7 @@ def evaluate(
     Returns:
         Dictionary with computed metrics.
     """
-    gt_dir = config.get_gt_dir(object_name)
+    gt_dir = config.get_gt_artifacts_dir(object_name)
     eval_dir = config.get_eval_dir(object_name, method_name)
     cleaned_mesh_path = config.get_cleaned_mesh_path(object_name, method_name)
 

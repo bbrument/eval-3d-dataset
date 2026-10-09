@@ -2,9 +2,15 @@
 
 [← back to README](../README.md)
 
-Start from `config/example_martine.yaml` or `config/example_sk3d.yaml`. Both ship with relative
-paths (resolved from the working directory); edit the two entries under `paths:` and nothing
-else is required.
+Start from `config/martine.yaml` or `config/skoltech3d.yaml`. Both ship with placeholder
+paths; edit the entries under `paths:` and nothing else is required.
+
+For the published Martine dataset, `config/martine.yaml` also sets the optional read-only
+inputs of the evaluation kit shipped under `<object>/gt/`: `paths.gt_artifacts_root` (sampled
+GT `gt_pcd.npy`, `attributes/`, `challenges/`), `paths.eval_cameras` (`eval_cameras.sfm`),
+`paths.eval_masks` (`masks_eval/`) and `paths.watertight_masks` (`masks_watertight/`; hole
+culling runs only when this directory holds PNG masks). Left unset, the pipeline uses the
+workspace `Groundtruth/` and the cameras/masks found under `paths.data_root`.
 
 Every command takes `-c/--config`; it is required.
 

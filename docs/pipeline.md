@@ -3,10 +3,12 @@
 [← back to README](../README.md)
 
 ```bash
-CFG=config/example_martine.yaml     # or config/example_sk3d.yaml
+CFG=config/martine.yaml     # or config/skoltech3d.yaml
 
 # 1. Ground truth: clean the mesh, sample it, compute per-point attributes.
 #    Writes Groundtruth/{gt_cleaned.ply,gt_pcd.npy,gt_pcd_provenance.json,attributes/}.
+#    Skip it for the published Martine dataset: its gt/ kit already ships these files
+#    and config/martine.yaml reads them in place (paths.gt_artifacts_root).
 eval-pipeline -c $CFG preprocess-gt --clean-gt
 
 # 2. Carve reconstructed vertices falling outside every silhouette.
