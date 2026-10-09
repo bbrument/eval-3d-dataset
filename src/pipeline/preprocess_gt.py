@@ -25,10 +25,15 @@ def compute_gt_curvature(mesh, gt_pcd: np.ndarray, radius: float | None = None) 
     Returns:
         Curvature values, shape (N,).
     """
-    vertex_curvature = compute_vertex_curvature(mesh, radius=radius)
-
     from ..core.metrics import compute_distances
     _, nearest_vertex_idx = compute_distances(gt_pcd, mesh.vertices)
+
+    # Only the vertices some GT point maps to are needed.
+    import os
+    n_jobs = int(os.environ.get("SLURM_CPUS_PER_TASK", os.cpu_count() or 1))
+    # Parallel batches; small batches keep the per-worker memory bounded (~batch x neighbours x 150 B).
+    vertex_curvature = compute_vertex_curvature(mesh, radius=radius, vertex_indices=nearest_vertex_idx,
+                                                batch_size=4_000 if n_jobs > 1 else 20_000, n_jobs=n_jobs)
 
     return vertex_curvature[nearest_vertex_idx].astype(np.float32)
 

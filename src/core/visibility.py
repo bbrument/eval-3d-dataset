@@ -186,6 +186,7 @@ def compute_visibility_count(
     dilation_radius: int = 0,
     show_progress: bool = True,
     use_masks: bool = True,
+    ray_chunk: int = 2_000_000,
 ) -> np.ndarray:
     """Compute per-point visibility count across all cameras.
 
@@ -201,6 +202,10 @@ def compute_visibility_count(
         dilation_radius: Mask dilation radius in pixels.
         show_progress: Show progress bar.
         use_masks: Whether to use 2D masks for filtering.
+        ray_chunk: Rays cast per call. Only points inside the view are ray-cast
+            (the count is in_view AND not occluded), in chunks: same result as
+            casting every point at once, with bounded memory (the all-points cast
+            OOM-ed at 128 GB on 12_assiette's 66 M-face GT).
 
     Returns:
         Visibility count per point, shape (N,), dtype int.
@@ -242,10 +247,10 @@ def compute_visibility_count(
         else:
             in_view = check_points_in_bounds(points, P, mask.shape)
 
-        visible_from_cam = ray_visibility_check(points, mesh, camera_center)
-
-        visible = in_view & visible_from_cam
-        visibility_count += visible.astype(np.int32)
+        sel = np.flatnonzero(in_view)
+        for s in range(0, len(sel), ray_chunk):
+            chunk = sel[s:s + ray_chunk]
+            visibility_count[chunk[ray_visibility_check(points[chunk], mesh, camera_center)]] += 1
 
     return visibility_count
 
