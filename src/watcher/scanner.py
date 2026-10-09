@@ -279,8 +279,11 @@ class SlurmSubmitter:
         """Wrap a command with virtualenv activation and headless rendering (osmesa)."""
         activate_script = self.venv_path / "bin" / "activate"
         mesa_root = "/apps/spack/spack-softwares/linux-rocky9-zen3/gcc-13.1.0/mesa-23.3.6-topby2nfuloy3ucydjszrde2j4mmu57w"
+        # mesa's llvmpipe (libLLVM-14.so) needs GLIBCXX_3.4.30, which the system
+        # /lib64/libstdc++.so.6 lacks -> prepend the gcc-13.1.0 runtime libstdc++.
+        gcc_runtime = "/apps/spack/spack-softwares/linux-rocky9-zen3/gcc-13.1.0/gcc-runtime-13.1.0-75nibxgezfw35erydivsu3yr2vz36loo/lib"
         return (
-            f"export LD_LIBRARY_PATH={mesa_root}/lib:${{LD_LIBRARY_PATH:-}} && "
+            f"export LD_LIBRARY_PATH={gcc_runtime}:{mesa_root}/lib:${{LD_LIBRARY_PATH:-}} && "
             f"export PYOPENGL_PLATFORM=osmesa && "
             f"source {activate_script} && {cmd}"
         )
@@ -317,6 +320,7 @@ class SlurmSubmitter:
         cmd = [
             "sbatch",
             "--parsable",
+            "--nice=2100000000",  # lowest possible priority (yield to everything else)
             "--kill-on-invalid-dep=yes",
             f"--account={slurm.account}",
             f"--partition={slurm.partition}",
@@ -376,6 +380,7 @@ class SlurmSubmitter:
         cmd = [
             "sbatch",
             "--parsable",
+            "--nice=2100000000",  # lowest possible priority (yield to everything else)
             "--kill-on-invalid-dep=yes",
             f"--account={slurm.account}",
             f"--partition={slurm.partition}",
@@ -434,6 +439,7 @@ class SlurmSubmitter:
         cmd = [
             "sbatch",
             "--parsable",
+            "--nice=2147483645",  # SLURM's maximum nice: renders yield even to the metrics jobs
             "--kill-on-invalid-dep=yes",
             f"--account={slurm.account}",
             f"--partition={slurm.partition}",
@@ -502,6 +508,7 @@ class SlurmSubmitter:
         cmd = [
             "sbatch",
             "--parsable",
+            "--nice=2100000000",  # lowest possible priority (yield to everything else)
             f"--account={slurm.account}",
             f"--partition={slurm.partition}",
             f"--cpus-per-task={slurm.eval.cpus}",
