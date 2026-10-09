@@ -134,6 +134,11 @@ class SlurmConfig(BaseModel):
     cleanup: SlurmResourceConfig = Field(default_factory=lambda: SlurmResourceConfig(cpus=4, mem_gb=48, time="02:00:00"))
     eval: SlurmResourceConfig = Field(default_factory=lambda: SlurmResourceConfig(cpus=16, mem_gb=64, time="04:00:00"))
     viz: SlurmResourceConfig = Field(default_factory=lambda: SlurmResourceConfig(cpus=4, mem_gb=32, time="01:00:00"))
+    setup_script: Optional[str] = Field(
+        default=None,
+        description="Shell script sourced at the start of every SLURM job, for machine-specific runtime setup "
+        "(e.g. putting a headless OSMesa library on LD_LIBRARY_PATH). Keep it out of git (config/*.local.sh).",
+    )
 
 
 class LocalConfig(BaseModel):

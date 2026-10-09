@@ -2,6 +2,7 @@
 
 import json
 import logging
+import shlex
 import subprocess
 from dataclasses import dataclass, field, asdict
 from datetime import datetime
@@ -11,6 +12,14 @@ from typing import Optional
 from ..config import Config, load_config
 
 logger = logging.getLogger(__name__)
+
+
+def wrap_command(cmd: str, venv_path: Path, setup_script: Optional[str] = None) -> str:
+    """Shell line for a SLURM job: source the machine setup script (if any), select the headless
+    OSMesa backend, activate the virtualenv, then run *cmd*."""
+    parts = [f"source {shlex.quote(str(setup_script))}"] if setup_script else []
+    parts += ["export PYOPENGL_PLATFORM=osmesa", f"source {venv_path / 'bin' / 'activate'}", cmd]
+    return " && ".join(parts)
 
 
 @dataclass
@@ -276,17 +285,9 @@ class SlurmSubmitter:
         return log_dir
 
     def _wrap_command(self, cmd: str) -> str:
-        """Wrap a command with virtualenv activation and headless rendering (osmesa)."""
-        activate_script = self.venv_path / "bin" / "activate"
-        mesa_root = "/apps/spack/spack-softwares/linux-rocky9-zen3/gcc-13.1.0/mesa-23.3.6-topby2nfuloy3ucydjszrde2j4mmu57w"
-        # mesa's llvmpipe (libLLVM-14.so) needs GLIBCXX_3.4.30, which the system
-        # /lib64/libstdc++.so.6 lacks -> prepend the gcc-13.1.0 runtime libstdc++.
-        gcc_runtime = "/apps/spack/spack-softwares/linux-rocky9-zen3/gcc-13.1.0/gcc-runtime-13.1.0-75nibxgezfw35erydivsu3yr2vz36loo/lib"
-        return (
-            f"export LD_LIBRARY_PATH={gcc_runtime}:{mesa_root}/lib:${{LD_LIBRARY_PATH:-}} && "
-            f"export PYOPENGL_PLATFORM=osmesa && "
-            f"source {activate_script} && {cmd}"
-        )
+        """Wrap a command with the optional setup script, headless rendering (osmesa) and the virtualenv."""
+        slurm = self.config.execution.slurm
+        return wrap_command(cmd, self.venv_path, slurm.setup_script if slurm else None)
 
     def submit_cleanup(self, job: EvalJob, depends_on: Optional[str] = None) -> Optional[str]:
         """Submit cleanup job to SLURM.

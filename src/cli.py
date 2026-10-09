@@ -367,7 +367,7 @@ def visualize(ctx, object_name, method_name, metrics, views, scale, cmap, max_di
             f"pyrender unavailable ({rendering.PYRENDER_IMPORT_ERROR}). "
             "Install the 'visualization' extra into this venv "
             "(uv pip install -e '.[visualization]') and, headless, set PYOPENGL_PLATFORM=osmesa "
-            "with libOSMesa on LD_LIBRARY_PATH (see SlurmSubmitter._wrap_command)."
+            "with libOSMesa on LD_LIBRARY_PATH (on SLURM: execution.slurm.setup_script, see docs/cluster.md)."
         )
 
     config = ctx.obj["config"]
