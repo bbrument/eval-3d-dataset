@@ -283,12 +283,11 @@ def _build_eval_tree(tmp_path, mesh: trimesh.Trimesh, method: str = "m") -> Conf
 
 
 def _legacy_metrics(config: Config, seed: int = 42) -> dict:
-    """The evaluate() computation as it stood before alignment existed."""
+    """The evaluate() computation without alignment (NaN removal only, no height cut)."""
     gt_pcd = np.load(config.get_gt_dir("obj") / "gt_pcd.npy")
     mesh = load_mesh(config.get_cleaned_mesh_path("obj", "m"))
     density = config.evaluation.downsample_density
     data_pcd = upsample_mesh(mesh.vertices, mesh.faces, density)
-    data_pcd = data_pcd[data_pcd[:, 2] > gt_pcd[:, 2].min()]
     data_pcd = data_pcd[~np.isnan(data_pcd).any(axis=1)]
     data_down = downsample_pcd(data_pcd, density, shuffle=True, seed=seed)
     dist_data2gt, _ = compute_distances(data_down, gt_pcd)
