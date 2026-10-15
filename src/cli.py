@@ -128,13 +128,18 @@ def cleanup(ctx, object_name, method_name, use_masks, force):
 @main.command()
 @click.option("--object", "-o", "object_name", help="Object name (default: all)")
 @click.option("--method", "-m", "method_name", help="Method name (default: all)")
+@click.option("--align/--no-align", "align", default=None,
+              help="Align the mesh onto the GT before evaluating (None = use config.alignment.enabled)")
 @click.option("--force", "-f", is_flag=True, help="Overwrite existing files")
 @click.pass_context
-def evaluate(ctx, object_name, method_name, force):
+def evaluate(ctx, object_name, method_name, align, force):
     """Evaluate meshes: compute distances, Chamfer, F-score."""
     from .pipeline.evaluate import evaluate as _evaluate
 
     config = ctx.obj["config"]
+    if align is not None:
+        config.alignment = config.alignment.model_copy(update={"enabled": align})
+
     objects = [object_name] if object_name else config.dataset.objects
     methods = [method_name] if method_name else config.dataset.methods
 

@@ -118,6 +118,48 @@ class EvaluationConfig(BaseModel):
         return v
 
 
+class AlignmentConfig(BaseModel):
+    """Optional data-to-GT alignment applied before the distances (see core/alignment.py).
+
+    Disabled by default: the pipeline then assumes the reconstruction already shares
+    the GT frame, exactly as before. Enable it for reconstructions in an arbitrary
+    frame and scale (feed-forward pointmaps, first-camera frame).
+    """
+
+    enabled: bool = Field(default=False, description="Align the cleaned mesh onto gt_pcd before evaluating")
+    mode: str = Field(default="sim3", description="'sim3' (rotation, translation, scale) or 'se3' (no scale)")
+    init: Optional[str] = Field(
+        default="centroid",
+        description="ICP initialisation: 'cameras' (Umeyama on camera centres), 'centroid', or null (identity)",
+    )
+    cameras_src: Optional[str] = Field(
+        default=None,
+        description="Camera file of the reconstruction (init: cameras). May use {object}/{method} placeholders",
+    )
+    cameras_dst: Optional[str] = Field(
+        default=None,
+        description="Camera file of the GT frame (init: cameras). Defaults to the dataset cameras (paths.data_root)",
+    )
+    max_iterations: int = Field(default=50, ge=1, description="ICP iteration cap")
+    inlier_factor: float = Field(default=3.0, gt=0, description="Reject correspondences beyond inlier_factor x median")
+    max_src_points: int = Field(default=20_000, ge=3, description="Surface samples drawn from the mesh for ICP")
+    max_dst_points: int = Field(default=200_000, ge=3, description="GT points used for ICP (subsampled)")
+
+    @field_validator("mode")
+    @classmethod
+    def validate_mode(cls, v: str) -> str:
+        if v not in ("sim3", "se3"):
+            raise ValueError("alignment.mode must be 'sim3' or 'se3'")
+        return v
+
+    @field_validator("init")
+    @classmethod
+    def validate_init(cls, v: Optional[str]) -> Optional[str]:
+        if v not in ("cameras", "centroid", None):
+            raise ValueError("alignment.init must be 'cameras', 'centroid' or null")
+        return v
+
+
 class SlurmResourceConfig(BaseModel):
     """SLURM resource configuration for a stage."""
 
@@ -214,6 +256,7 @@ class Config(BaseModel):
     paths: PathsConfig
     cleanup: CleanupConfig = Field(default_factory=CleanupConfig)
     evaluation: EvaluationConfig = Field(default_factory=EvaluationConfig)
+    alignment: AlignmentConfig = Field(default_factory=AlignmentConfig)
     execution: ExecutionConfig = Field(default_factory=ExecutionConfig)
     aggregation: AggregationConfig = Field(default_factory=AggregationConfig)
     visualization: VisualizationConfig = Field(default_factory=VisualizationConfig)
