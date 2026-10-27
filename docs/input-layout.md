@@ -38,5 +38,5 @@ mesh, ship `gt_pcd.npy` with them or they index nothing.
 sorted so the choice is deterministic. Name yours `gt_mesh.ply` and there is no ambiguity.
 
 **Cameras.** Searched in order: `cameras.npz`, `sfm.json` (AliceVision SfMData),
-`cameras.json`, `*.sfm`. All meshes must already share a frame — the pipeline does not
-register.
+`cameras.json`, `*.sfm`. All meshes are assumed to share the GT frame; if yours does not, see
+[Data-to-GT alignment](configuration.md#data-to-gt-alignment-optional).

@@ -20,6 +20,7 @@ Each object×method cell writes one `eval_results/metrics.json`.
 | `exclude_masks` | the mask files actually applied, by name. |
 | `max_dist` | the value used, echoed so the file is self-describing. |
 | `seed` | resampling seed (42). |
+| `alignment_residual_median` | only with `alignment.enabled`: median mesh→GT residual after ICP. Large against `max_dist` = the fit failed. |
 
 **`NaN` is a result, not a crash.** It means the cell produced nothing measurable at this
 `max_dist`, and it is deliberately not `0.0` so it cannot be averaged into a ranking as though

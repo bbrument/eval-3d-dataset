@@ -5,12 +5,90 @@ from pathlib import Path
 
 import numpy as np
 
+import trimesh
+
 from ..config import Config
+from ..core.alignment import align_sim3, apply_transform, camera_init
 from ..core.mesh import load_mesh
 from ..core.sampling import upsample_mesh, downsample_pcd, remove_nan_points
 from ..core.metrics import compute_distances, compute_metrics
 from ..core.masking import load_gt_exclude, apply_exclude
 import cv2
+
+
+def _resolve_camera_paths(config: Config, object_name: str, method_name: str) -> tuple[Path, Path]:
+    """Resolve alignment.cameras_src / cameras_dst (templates allowed) for init: cameras."""
+    alignment = config.alignment
+    if alignment.cameras_src is None:
+        raise ValueError(
+            "alignment.init='cameras' requires alignment.cameras_src "
+            "(camera file of the reconstruction)"
+        )
+    src_path = config._resolve_template(alignment.cameras_src, object_name, method_name)
+    if alignment.cameras_dst is not None:
+        dst_path = config._resolve_template(alignment.cameras_dst, object_name, method_name)
+    else:
+        dst_path = config.get_cameras_path(object_name, method_name)
+    return src_path, dst_path
+
+
+def _align_to_gt(
+    config: Config,
+    object_name: str,
+    method_name: str,
+    data_mesh: trimesh.Trimesh,
+    gt_pcd: np.ndarray,
+    seed: int,
+) -> tuple[trimesh.Trimesh, dict]:
+    """Align the cleaned mesh onto gt_pcd (see core/alignment.py). Returns (new mesh, record).
+
+    The ICP source is an area-weighted surface sample of the mesh — its count does not
+    depend on the (unknown) scale of the reconstruction, unlike `upsample_mesh` at a
+    density expressed in GT units.
+    """
+    alignment = config.alignment
+    with_scale = alignment.mode == "sim3"
+
+    init_T = None
+    if alignment.init == "cameras":
+        src_path, dst_path = _resolve_camera_paths(config, object_name, method_name)
+        print(f"  Alignment init from cameras: {src_path} -> {dst_path}")
+        init_T = camera_init(src_path, dst_path, with_scale=with_scale)
+    elif alignment.init is None:
+        init_T = np.eye(4)
+
+    n_samples = min(alignment.max_src_points, max(len(data_mesh.vertices), 3))
+    src_pts, _ = trimesh.sample.sample_surface(data_mesh, n_samples, seed=seed)
+    src_pts = np.concatenate([np.asarray(src_pts, dtype=np.float64), data_mesh.vertices], axis=0)
+
+    print(f"  Aligning mesh to GT ({alignment.mode}, init={alignment.init})")
+    T, stats = align_sim3(
+        src_pts,
+        gt_pcd,
+        init=init_T,
+        scale=with_scale,
+        robust=True,
+        max_iterations=alignment.max_iterations,
+        inlier_factor=alignment.inlier_factor,
+        max_src_points=alignment.max_src_points,
+        max_dst_points=alignment.max_dst_points,
+        seed=seed,
+    )
+    print(
+        f"  Alignment: median residual {stats['residual_median_before']:.4f} -> "
+        f"{stats['residual_median_after']:.4f}, scale {stats['scale']:.4f}, "
+        f"inliers {stats['inlier_fraction']:.2%}, {stats['n_iterations']} it"
+    )
+
+    record = {
+        "mode": alignment.mode,
+        "init": alignment.init,
+        "init_transform": (init_T if init_T is not None else np.eye(4)).tolist()
+        if alignment.init != "centroid" else None,
+        "transform": T.tolist(),
+        "stats": stats,
+    }
+    return apply_transform(data_mesh, T), record
 
 
 def evaluate(
@@ -29,6 +107,7 @@ def evaluate(
         - distances/gt_points.npy, data_points.npy
         - curves/thresholds.npy, precision.npy, recall.npy, fscore.npy
         - metrics.json
+        - alignment.json (only when config.alignment.enabled)
 
     Args:
         config: Pipeline configuration.
@@ -94,6 +173,15 @@ def evaluate(
         print("  Chamfer: nan (empty reconstruction, scored as failure)")
         return metrics
 
+    # Optional data-to-GT alignment. Off by default: the mesh is assumed to share the
+    # GT frame and nothing below changes. On, the *aligned* mesh is what gets sampled
+    # and measured, so density / max_dist keep their GT-unit meaning.
+    alignment_record = None
+    if config.alignment.enabled:
+        data_mesh, alignment_record = _align_to_gt(
+            config, object_name, method_name, data_mesh, gt_pcd, seed
+        )
+
     density = config.evaluation.downsample_density
 
     print(f"  Upsampling data mesh (density={density})")
@@ -136,8 +224,13 @@ def evaluate(
     metrics["n_data_points"] = len(data_down)
     metrics["exclude_masks"] = [Path(p).name for p in applied_masks]
     metrics["max_dist"] = config.evaluation.max_dist
+    if alignment_record is not None:
+        metrics["alignment_residual_median"] = alignment_record["stats"]["residual_median_after"]
 
     eval_dir.mkdir(parents=True, exist_ok=True)
+    if alignment_record is not None:
+        with open(eval_dir / "alignment.json", "w") as f:
+            json.dump(alignment_record, f, indent=2)
     distances_dir = eval_dir / "distances"
     curves_dir = eval_dir / "curves"
     distances_dir.mkdir(exist_ok=True)
