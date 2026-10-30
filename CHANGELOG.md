@@ -13,6 +13,9 @@
   [docs/figures.md](docs/figures.md).
 
 ### Changed
+- **`figures`: radar attribute axes on the absolute value.** `abs: true` on an attribute axis applies
+  its bounds to |attribute|. The Martine specification's high-curvature axis is now |k| >= 0.75,
+  concave and convex (threshold to be set with the VCM curvature), instead of k < -0.2.
 - **`figures`: F-score in the Chamfer table.** `tables.chamfer.fscore` adds the F-score (%) at one
   threshold, ranked on its own (highest in bold), either in each cell as 'CD / F' (`layout: cell`) or
   as a second block below the Chamfer one (`layout: stacked`); `method_tiers` restricts the tiers of a

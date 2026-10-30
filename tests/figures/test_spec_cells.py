@@ -28,6 +28,9 @@ def test_martine_example_spec_loads():
         assert t.methods == spec.prf.methods and t.method_tiers == {"meshroom": ["d4"]}
         assert (t.fscore, t.mean) == (0.5, "pooled")
     assert spec.radar.threshold == 0.5 and spec.prf.n_thresholds == 201
+    # high curvature: |k| >= 0.75, concave and convex (Baptiste, 30/10/2026; threshold to be set with the VCM curvature)
+    curv = next(a for a in spec.radar.attributes if a.key == "high_curvature")
+    assert (curv.attribute, curv.abs, curv.ge, curv.lt, curv.le) == ("curvature_values", True, 0.75, None, None)
     # RealityScan view subsets at d4 (Linux rerun, 25/10/2026), as for COLMAP, PGSR, NeuS2 and RNb-NeuS2
     assert spec.cells.declared["realityscan"].views == [40, 20, 10, 5]
 

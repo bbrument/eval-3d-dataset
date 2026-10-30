@@ -122,7 +122,9 @@ radar:
   threshold: 0.5
   properties: [lambertian, specular, transparent, not_textured, fine_structure]
   attributes:
-    - {key: high_curvature, attribute: curvature_values, lt: -0.2}   # strong convexity (edges, ridges)
+    # |k| >= 0.75: strong curvature, concave and convex (Baptiste, 30/10/2026); threshold to be set with the VCM
+    # curvature (PR #10)
+    - {key: high_curvature, attribute: curvature_values, abs: true, ge: 0.75}
     - {key: low_visibility, attribute: visibility_count, ge: 1, le: 3}
   labels:
     lambertian: Lambertian
