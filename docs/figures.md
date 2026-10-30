@@ -61,7 +61,8 @@ threshold. The ratios are computed in float64.
 `challenges/<property>.npy`. An object whose whole surface has the property ships a mask of ones.
 Three cases are errors: a mask name that is not a declared property, an object without
 `challenges/`, and a missing file that a pool expects. An attribute axis selects GT points with
-`lt` (strict upper bound) and/or `ge`/`le` (closed bounds) on `attributes/<attribute>.npy`.
+`lt` (strict upper bound) and/or `ge`/`le` (closed bounds) on `attributes/<attribute>.npy`, or on its
+absolute value with `abs: true`.
 
 **Qualitative renders** are made beforehand with `visualize`, for each object × method cell. The
 command for the Martine paper is in the comment above the `qualitative` section of the

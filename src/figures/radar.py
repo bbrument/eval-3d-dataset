@@ -38,6 +38,7 @@ def discover_properties(config: Config, objects: list[str], properties: list[str
 
 
 def _attribute_mask(axis: AttributeAxis, values: np.ndarray) -> np.ndarray:
+    values = np.abs(values) if axis.abs else values
     mask = np.ones(len(values), bool)
     if axis.lt is not None:
         mask &= values < axis.lt
