@@ -55,10 +55,11 @@ class PRFSpec(BaseModel):
 
 
 class AttributeAxis(BaseModel):
-    """Radar axis on a per-point GT attribute: lt (strict) and/or ge/le (closed) bounds."""
+    """Radar axis on a per-point GT attribute: lt (strict) and/or ge/le (closed) bounds, on |attribute| if abs."""
 
     key: str
     attribute: str
+    abs: bool = Field(default=False, description="Bounds on the absolute value (e.g. curvature, concave and convex)")
     lt: Optional[float] = None
     ge: Optional[float] = None
     le: Optional[float] = None

@@ -31,6 +31,9 @@ def test_martine_example_spec_loads():
     # Neuralangelo next to NeuS2 on the radar (Baptiste, 04/11/2026), in the PRF legend order and style
     assert spec.radar.methods == ["realityscan", "colmap", "pgsr", "neus2", "neuralangelo", "rnbneus2"]
     assert [m for m in spec.prf.methods if m in spec.radar.methods] == spec.radar.methods
+    # high curvature: |k| >= 0.75 on the VCM curvature, concave and convex (Baptiste, 30/10/2026)
+    curv = next(a for a in spec.radar.attributes if a.key == "high_curvature")
+    assert (curv.attribute, curv.abs, curv.ge, curv.lt, curv.le) == ("curvature_values", True, 0.75, None, None)
     # RealityScan view subsets at d4 (Linux rerun, 25/10/2026), as for COLMAP, PGSR, NeuS2 and RNb-NeuS2
     assert spec.cells.declared["realityscan"].views == [40, 20, 10, 5]
 
