@@ -39,13 +39,14 @@ def main(ctx, config):
 @click.option("--curvature/--no-curvature", default=True, help="Compute curvature")
 @click.option("--curvature-radius", type=float, help="VCM curvature: ball radius r (default: from config)")
 @click.option("--curvature-tube", type=float, help="VCM curvature: tube thickness R (default: from config)")
+@click.option("--curvature-max-edge", type=float, help="VCM curvature: longest edge of the proxy mesh (default: from config)")
 @click.option("--visibility/--no-visibility", default=True, help="Compute visibility")
 @click.option("--use-masks/--no-masks", "use_masks", default=None, help="Use 2D masks for visibility (None = use config)")
 @click.option("--clean-gt/--no-clean-gt", default=True, help="Clean GT mesh by visibility")
 @click.option("--force", "-f", is_flag=True, help="Overwrite existing files")
 @click.pass_context
-def preprocess_gt(ctx, object_name, curvature, curvature_radius, curvature_tube, visibility, use_masks, clean_gt,
-                  force):
+def preprocess_gt(ctx, object_name, curvature, curvature_radius, curvature_tube, curvature_max_edge, visibility,
+                  use_masks, clean_gt, force):
     """Preprocess ground truth: clean mesh, sample point cloud and compute attributes."""
     from .pipeline.preprocess_gt import preprocess_gt as _preprocess_gt
 
@@ -56,11 +57,26 @@ def preprocess_gt(ctx, object_name, curvature, curvature_radius, curvature_tube,
         config.evaluation.curvature_radius = curvature_radius
     if curvature_tube is not None:
         config.evaluation.curvature_tube = curvature_tube
+    if curvature_max_edge is not None:
+        config.evaluation.curvature_max_edge = curvature_max_edge
         
     objects = [object_name] if object_name else config.dataset.objects
 
     for obj in objects:
         _preprocess_gt(config, obj, curvature, visibility, clean_gt, force)
+
+
+@main.command(name="proxy-curvature")
+@click.option("--object", "-o", "object_name", help="Object name (default: all)")
+@click.option("--force", "-f", is_flag=True, help="Recompute the curvature even if cached")
+@click.pass_context
+def proxy_curvature(ctx, object_name, force):
+    """GT -> VCM curvature on the vertices of its proxy mesh, tile by tile (.npz, cached), without the GT point cloud."""
+    from .pipeline.preprocess_gt import proxy_curvature as _proxy_curvature
+
+    config = ctx.obj["config"]
+    for obj in [object_name] if object_name else config.dataset.objects:
+        _proxy_curvature(config, obj, force)
 
 
 @main.command(name="preprocess-challenges")

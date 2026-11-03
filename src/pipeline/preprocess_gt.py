@@ -7,32 +7,79 @@ from tqdm import tqdm
 
 from ..config import Config
 from ..core.camera import load_cameras_auto
-from ..core.mesh import load_mesh, compute_vertex_curvature
+from ..core.mesh import load_mesh
 from ..core.sampling import upsample_mesh, downsample_pcd
 from ..core.visibility import compute_visibility_count
 
 
-def compute_gt_curvature(mesh, gt_pcd: np.ndarray, radius: float | None = None, tube: float = 0.5) -> np.ndarray:
+def compute_gt_curvature(mesh, gt_pcd: np.ndarray, radius: float | None = None, tube: float = 0.5,
+                         max_edge: float | None = None) -> np.ndarray:
     """Compute curvature values for GT point cloud.
 
-    Uses vertex curvature from the mesh and transfers to nearest sampled points.
+    VCM curvature on the vertices of the proxy of the mesh (edges refined to max_edge, src/core/proxy.py), measured
+    tile by tile (tiled_curvature), then transferred to the nearest sampled points.
 
     Args:
-        mesh: GT mesh.
+        mesh: GT mesh (raw: the visibility cleaning cuts holes whose rims the VCM would see as edges).
         gt_pcd: Sampled GT point cloud, shape (N, 3).
         radius: VCM ball radius r (None = 1.0).
         tube: VCM tube thickness R.
+        max_edge: Longest edge of the proxy (None = no refinement).
 
     Returns:
         Curvature values, shape (N,).
     """
-    from ..core.metrics import compute_distances
-    _, nearest_vertex_idx = compute_distances(gt_pcd, mesh.vertices)
-    # VCM needs every vertex (shared Voronoi cells), the points then take their nearest vertex's value.
-    vertex_curvature = compute_vertex_curvature(mesh, radius=1.0 if radius is None else radius, tube=tube,
-                                                verbose=True)
+    from ..core.proxy import tiled_curvature
+    points, curvature = tiled_curvature(mesh, max_edge, 1.0 if radius is None else radius, tube, verbose=True)
+    return _to_points(curvature, points, gt_pcd)
 
+
+def _to_points(vertex_curvature, vertices, gt_pcd):
+    # VCM needs every vertex (shared Voronoi cells), the points then take their nearest vertex's value.
+    from ..core.metrics import compute_distances
+    _, nearest_vertex_idx = compute_distances(gt_pcd, vertices)
     return vertex_curvature[nearest_vertex_idx].astype(np.float32)
+
+
+def _raw_gt_parts(config: Config, object_name: str) -> list[Path]:
+    """Raw GT mesh file(s): several parts when they exist (e.g. 25_CT_plant_p*.ply)."""
+    mesh_path_default = config.get_gt_mesh_path(object_name, cleaned=False)
+    parts = sorted(list(mesh_path_default.parent.glob(f"{object_name.split('_')[0]}_*_p*.ply")))
+    if not parts:
+        parts = [mesh_path_default] if mesh_path_default.exists() else []
+    if not parts:
+        raise FileNotFoundError(f"No GT meshes found for {object_name} in {mesh_path_default.parent}")
+    return parts
+
+
+def proxy_curvature(config: Config, object_name: str, force: bool = False):
+    """Raw GT -> VCM curvature on the vertices of its proxy, tile by tile (tiled_curvature), cached; no GT point
+    cloud involved.
+
+    Creates Groundtruth/attributes/proxy_curvature_r<r>_R<R>_e<max_edge>.npz (r, R and max edge in the name, so that
+    other values give other files): points (n, 3) = the proxy vertices, curvature (n,) (convex < 0).
+
+    Returns:
+        (proxy vertices, vertex curvature).
+    """
+    import trimesh
+    from ..core.proxy import tiled_curvature
+    ev = config.evaluation
+    radius = 1.0 if ev.curvature_radius is None else ev.curvature_radius
+    tag = f"e{ev.curvature_max_edge:g}" if ev.curvature_max_edge is not None else "gt"
+    curv_path = config.get_gt_dir(object_name) / "attributes" / f"proxy_curvature_r{radius:g}_R{ev.curvature_tube:g}_{tag}.npz"
+    print(f"Proxy curvature for {object_name} (r={radius:g}, R={ev.curvature_tube:g}, max_edge={ev.curvature_max_edge})")
+    if curv_path.exists() and not force:
+        print(f"  Using cached {curv_path.name}")
+        cached = np.load(curv_path)
+        return cached["points"], cached["curvature"]
+    # raw parts, not gt_cleaned.ply: the visibility cleaning cuts holes whose rims the VCM would see as edges
+    mesh = trimesh.util.concatenate([load_mesh(p) for p in _raw_gt_parts(config, object_name)])
+    points, curvature = tiled_curvature(mesh, ev.curvature_max_edge, radius, ev.curvature_tube, verbose=True)
+    curv_path.parent.mkdir(parents=True, exist_ok=True)
+    np.savez(curv_path, points=points, curvature=curvature)
+    print(f"  Saved {curv_path.name} ({len(points):,} proxy vertices)")
+    return points, curvature
 
 
 def preprocess_gt(
@@ -60,16 +107,7 @@ def preprocess_gt(
         force: Overwrite existing files.
     """
     gt_dir = config.get_gt_dir(object_name)
-    # Search for multiple meshes if they exist (e.g. 25_CT_plant_p*.ply)
-    mesh_path_default = config.get_gt_mesh_path(object_name, cleaned=False)
-    
-    # Check if there are multiple parts (e.g. p1, p2, ...)
-    parts = sorted(list(mesh_path_default.parent.glob(f"{object_name.split('_')[0]}_*_p*.ply")))
-    if not parts:
-        parts = [mesh_path_default] if mesh_path_default.exists() else []
-
-    if not parts:
-        raise FileNotFoundError(f"No GT meshes found for {object_name} in {mesh_path_default.parent}")
+    parts = _raw_gt_parts(config, object_name)
 
     cleaned_mesh_path = config.get_gt_mesh_path(object_name, cleaned=True)
     gt_pcd_path = gt_dir / "gt_pcd.npy"
@@ -230,9 +268,10 @@ def preprocess_gt(
         if curvature_path.exists() and not force:
             print(f"  Curvature already exists, skipping")
         else:
-            ev = config.evaluation
-            print(f"  Computing curvature values (radius={ev.curvature_radius}, tube={ev.curvature_tube})")
-            curvature = compute_gt_curvature(mesh, gt_pcd, radius=ev.curvature_radius, tube=ev.curvature_tube)
+            # on the proxy of the raw GT (cached), then to gt_pcd, which lies on a subset of that surface
+            points, vertex_curvature = proxy_curvature(config, object_name, force=force)
+            curvature = _to_points(vertex_curvature, points, gt_pcd)
+            del points, vertex_curvature
             np.save(curvature_path, curvature)
             print(f"  Saved curvature_values.npy")
 

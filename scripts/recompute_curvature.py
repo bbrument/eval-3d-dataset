@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Recompute curvature_values.npy (VCM) with a specified ball radius r and tube thickness R.
 
-Loads existing gt_pcd.npy and GT mesh, computes curvature, saves.
+Loads existing gt_pcd.npy and the raw GT mesh, computes curvature on its proxy tile by tile (src/core/proxy.py), saves.
 Does NOT recompute gt_pcd or visibility.
 """
 
@@ -12,7 +12,9 @@ from pathlib import Path
 import numpy as np
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
-from core.mesh import load_mesh, compute_vertex_curvature
+from core.mesh import load_mesh
+sys.path.append(str(Path(__file__).parent.parent))  # after src/: the repo root has a config/ folder
+from src.pipeline.preprocess_gt import compute_gt_curvature  # relative imports: load through the src package
 from config import load_config
 
 
@@ -22,6 +24,7 @@ def main():
     parser.add_argument("--object", "-o", required=True)
     parser.add_argument("--radius", "-r", type=float, default=1.0, help="VCM ball radius r (mm)")
     parser.add_argument("--tube", type=float, default=0.5, help="VCM tube thickness R (mm)")
+    parser.add_argument("--max-edge", type=float, default=0.15, help="longest edge of the proxy mesh (mm)")
     args = parser.parse_args()
 
     config = load_config(args.config)
@@ -34,9 +37,8 @@ def main():
         print(f"ERROR: {gt_pcd_path} not found")
         sys.exit(1)
 
-    gt_mesh_path = config.get_gt_mesh_path(args.object, cleaned=True)
-    if not gt_mesh_path.exists():
-        gt_mesh_path = config.get_gt_mesh_path(args.object, cleaned=False)
+    # raw mesh: the visibility cleaning cuts holes whose rims the VCM would see as edges
+    gt_mesh_path = config.get_gt_mesh_path(args.object, cleaned=False)
     if not gt_mesh_path.exists():
         print(f"ERROR: no GT mesh found for {args.object}")
         sys.exit(1)
@@ -50,14 +52,8 @@ def main():
     gt_pcd = np.load(gt_pcd_path)
     print(f"GT pcd: {len(gt_pcd):,} points")
 
-    print(f"Computing vertex curvature...")
-    vertex_curvature = compute_vertex_curvature(mesh, radius=args.radius, tube=args.tube)
-
-    print(f"Transferring to gt_pcd via nearest neighbor...")
-    from scipy.spatial import cKDTree
-    tree = cKDTree(mesh.vertices)
-    _, nearest_idx = tree.query(gt_pcd, k=1, workers=-1)
-    curvature = vertex_curvature[nearest_idx].astype(np.float32)
+    print(f"Computing curvature on the proxy mesh (max edge {args.max_edge} mm)...")
+    curvature = compute_gt_curvature(mesh, gt_pcd, radius=args.radius, tube=args.tube, max_edge=args.max_edge)
 
     attributes_dir.mkdir(parents=True, exist_ok=True)
     np.save(curvature_path, curvature)

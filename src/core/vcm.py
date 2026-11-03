@@ -167,15 +167,18 @@ def _vcm_cells(V, area_v, R, spv=20, seed=0, verbose=False):
     return out * delta**3
 
 
-def _rank1(cell):
-    """Keep the normal part λ_max ν νᵀ of each cell (drops the tangent spread due to meshing and noise)."""
+def _rank1(cell, block=2_000_000):
+    """Keep the normal part λ_max ν νᵀ of each cell (drops the tangent spread due to meshing and noise), in place."""
     i, j = np.array([0, 1, 2, 0, 0, 1]), np.array([0, 1, 2, 1, 2, 2])
-    M = np.zeros((len(cell), 3, 3))
-    M[:, i, j] = cell
-    M[:, j, i] = cell
-    w, vec = np.linalg.eigh(M)
-    nu = vec[:, :, 2]
-    return w[:, 2:] * nu[:, i] * nu[:, j]
+    for s in range(0, len(cell), block):  # eigh temporaries: ~25 floats per cell
+        c = cell[s:s + block]
+        M = np.zeros((len(c), 3, 3))
+        M[:, i, j] = c
+        M[:, j, i] = c
+        w, vec = np.linalg.eigh(M)
+        nu = vec[:, :, 2]
+        c[:] = w[:, 2:] * nu[:, i] * nu[:, j]
+    return cell
 
 
 def _principal(S, V, r, o):
@@ -205,22 +208,32 @@ def vcm_principal_curvatures(V, F, r=1.0, R=0.5, spv=20, batch=2_000_000, verbos
     t0 = time.perf_counter()
     V = np.ascontiguousarray(V, np.float64)
     F = np.ascontiguousarray(F, np.int64)
-    nrm = 0.5 * np.cross(V[F[:, 1]] - V[F[:, 0]], V[F[:, 2]] - V[F[:, 0]])  # normal x area
-    A = np.linalg.norm(nrm, axis=1)
+    blocks = [slice(s, s + batch) for s in range(0, len(F), batch)]  # per-face temporaries by blocks of faces
+
+    def normal_area(sl):  # normal x area
+        f = F[sl]
+        return 0.5 * np.cross(V[f[:, 1]] - V[f[:, 0]], V[f[:, 2]] - V[f[:, 0]])
+
+    A = np.concatenate([np.linalg.norm(normal_area(sl), axis=1) for sl in blocks])
     area_v = np.bincount(F.ravel(), np.repeat(A / 3, 3), minlength=len(V))
     cell = _rank1(_vcm_cells(V, area_v, R, spv, verbose=verbose))
     if verbose:
         print(f"  VCM cells {time.perf_counter() - t0:.0f} s", flush=True)
-    # share of each triangle in the VCM of its vertices: (A_f / 3) / A_v
-    with np.errstate(invalid="ignore", divide="ignore"):
-        share = np.nan_to_num((A / 3)[:, None] / area_v[F])
     o = V.mean(0)  # centred coordinates for float32 precision
-    C = V[F].mean(axis=1)
-    W = np.column_stack([A, np.einsum("fk,fkj->fj", share, cell[F]), nrm,
-                         (nrm[:, :, None] * (C - o)[:, None, :]).reshape(-1, 9)]).astype(np.float32)
-    del cell, share
-    return _ball_sums_batched(V, F, W, C.astype(np.float32), r, lambda S, sl: _principal(S, V[sl], r, o),
-                           batch, verbose, t0)
+    W = np.empty((len(F), 19), np.float32)
+    C = np.empty((len(F), 3), np.float32)
+    for sl in blocks:
+        f, nrm, c = F[sl], normal_area(sl), V[F[sl]].mean(axis=1)
+        # share of each triangle in the VCM of its vertices: (A_f / 3) / A_v
+        with np.errstate(invalid="ignore", divide="ignore"):
+            share = np.nan_to_num((A[sl] / 3)[:, None] / area_v[f])
+        W[sl, 0] = A[sl]
+        W[sl, 1:7] = np.einsum("fk,fkj->fj", share, cell[f])
+        W[sl, 7:10] = nrm
+        W[sl, 10:19] = (nrm[:, :, None] * (c - o)[:, None, :]).reshape(-1, 9)
+        C[sl] = c
+    del cell
+    return _ball_sums_batched(V, F, W, C, r, lambda S, sl: _principal(S, V[sl], r, o), batch, verbose, t0)
 
 
 def compute_vertex_curvature(mesh, radius: float = 1.0, tube: float = 0.5, verbose: bool = False) -> np.ndarray:

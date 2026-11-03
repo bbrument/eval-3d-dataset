@@ -97,6 +97,9 @@ class EvaluationConfig(BaseModel):
     curvature_radius: Optional[float] = Field(
         default=1.0, description="VCM curvature: radius r of the connected ball, mesh units (None = 1.0)")
     curvature_tube: float = Field(default=0.5, gt=0, description="VCM curvature: tube thickness R, mesh units")
+    curvature_max_edge: Optional[float] = Field(
+        default=0.15, gt=0,
+        description="VCM curvature: longest edge of the proxy mesh, mesh units (None = GT mesh as is); 0.15 = non-CT GT p99")
     sampling_seed: int = Field(
         default=42,
         description=(
