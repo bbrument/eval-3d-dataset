@@ -14,7 +14,6 @@ import numba as nb
 import numpy as np
 from scipy.spatial import cKDTree
 
-
 # ---------- connected ball ----------
 
 def _csr(rows, cols, n):

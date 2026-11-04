@@ -1,16 +1,14 @@
 """F8 Fix: Integration tests for pipeline stages."""
 
+
 import numpy as np
 import pytest
-from pathlib import Path
-import tempfile
-import json
 
-from src.core.mesh import load_mesh, save_mesh, filter_mesh_by_vertex_mask
+from src.core.mesh import filter_mesh_by_vertex_mask
 from src.core.metrics import compute_distances, compute_metrics
-from src.core.sampling import upsample_mesh, downsample_pcd
-from src.io.results import save_metrics, load_metrics, save_distances, load_distances
-from src.io.masks import load_gt_pcd, load_visibility_count, load_curvature_values
+from src.core.sampling import downsample_pcd, upsample_mesh
+from src.io.masks import load_curvature_values, load_gt_pcd, load_visibility_count
+from src.io.results import load_distances, load_metrics, save_distances, save_metrics
 
 
 class TestMeshUtilities:
@@ -18,10 +16,7 @@ class TestMeshUtilities:
 
     def test_filter_mesh_preserves_topology(self, tmp_path):
         """Filtering should preserve valid mesh topology."""
-        try:
-            import trimesh
-        except ImportError:
-            pytest.skip("trimesh not installed")
+        trimesh = pytest.importorskip("trimesh")
 
         # Create simple mesh (tetrahedron)
         vertices = np.array([
@@ -98,10 +93,7 @@ class TestEndToEndEvaluation:
 
     def test_full_evaluation_pipeline(self, tmp_path):
         """Test complete evaluation from mesh to metrics."""
-        try:
-            import trimesh
-        except ImportError:
-            pytest.skip("trimesh not installed")
+        pytest.importorskip("trimesh")
 
         # Create two similar meshes (GT and reconstructed)
         # GT: unit cube

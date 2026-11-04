@@ -1,11 +1,10 @@
 """Apply GT attribute masks to extract per-zone distances."""
 
-from pathlib import Path
 
 import numpy as np
 
 from ..config import Config
-from ..io.masks import load_visibility_count, load_curvature_values, load_challenge_mask, list_challenge_masks
+from ..io.masks import list_challenge_masks, load_challenge_mask, load_curvature_values, load_visibility_count
 from ..io.results import load_distances
 
 
@@ -126,7 +125,7 @@ def apply_curvature_masks(
     data2gt_curvature = curvature[distances["data2gt_idx"]]
     np.save(zones_dir / "data2gt_curvature.npy", data2gt_curvature)
 
-    print(f"  Saved curvature zone data")
+    print("  Saved curvature zone data")
 
 
 def apply_challenge_masks(
@@ -153,7 +152,7 @@ def apply_challenge_masks(
 
     challenge_names = list_challenge_masks(gt_dir)
     if not challenge_names:
-        print(f"  No challenge masks found")
+        print("  No challenge masks found")
         return
 
     distances = load_distances(eval_dir)
@@ -216,14 +215,14 @@ def apply_all_masks(
         if vis_path.exists():
             apply_visibility_masks(config, object_name, method_name, force)
         else:
-            print(f"  Skipping visibility (no visibility_count.npy)")
+            print("  Skipping visibility (no visibility_count.npy)")
 
     if curvature:
         curv_path = gt_dir / "attributes" / "curvature_values.npy"
         if curv_path.exists():
             apply_curvature_masks(config, object_name, method_name, force)
         else:
-            print(f"  Skipping curvature (no curvature_values.npy)")
+            print("  Skipping curvature (no curvature_values.npy)")
 
     if challenges:
         apply_challenge_masks(config, object_name, method_name, force)

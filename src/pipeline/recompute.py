@@ -17,8 +17,8 @@ from pathlib import Path
 import numpy as np
 
 from ..config import Config
-from ..core.metrics import compute_metrics, compute_fscore_curve
-from ..core.masking import load_gt_exclude, apply_exclude
+from ..core.masking import apply_exclude, load_gt_exclude
+from ..core.metrics import compute_fscore_curve, compute_metrics
 
 
 def recompute_metrics(

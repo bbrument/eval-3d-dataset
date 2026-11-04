@@ -23,8 +23,8 @@ import inspect
 import numpy as np
 import pytest
 
-from src.core.sampling import upsample_mesh, downsample_pcd
-from src.config import Config, DatasetConfig, PathsConfig, EvaluationConfig
+from src.config import Config, DatasetConfig, EvaluationConfig, PathsConfig
+from src.core.sampling import downsample_pcd, upsample_mesh
 
 
 def _plane_grid(n: int = 6, spacing: float = 1.0):

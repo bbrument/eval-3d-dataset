@@ -2,13 +2,12 @@
 
 import json
 from pathlib import Path
-from typing import Optional
 
 import numpy as np
 
 from ..config import Config
-from ..io.masks import list_challenge_masks
 from ..core.metrics import compute_chamfer, compute_fscore_curve
+from ..io.masks import list_challenge_masks
 
 
 def discover_methods(config: Config) -> list[str]:

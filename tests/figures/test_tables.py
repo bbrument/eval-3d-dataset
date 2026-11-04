@@ -52,7 +52,7 @@ def test_chamfer_ranks_rows_and_reports_means(tmp_path):
 def test_failures_ordered_dense_to_sparse(tmp_path):
     spec, res = _results(tmp_path)
     tex = failures_table(spec, res)
-    lines = [l for l in tex.splitlines() if "/2 &" in l]
+    lines = [line for line in tex.splitlines() if "/2 &" in line]
     assert lines == ["Alpha d2 & 1/2 & obj2 \\\\", "Alpha d4, 10 views & 1/2 & obj2 \\\\"]
 
 

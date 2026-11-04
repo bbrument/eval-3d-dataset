@@ -1,21 +1,18 @@
 """Tests for config.py - configuration loading and validation."""
 
-import os
-from pathlib import Path
 
 import pytest
 import yaml
 
 from src.config import (
+    AggregationConfig,  # F1 Fix: Import AggregationConfig
+    CleanupConfig,
     Config,
     DatasetConfig,
-    PathsConfig,
-    CleanupConfig,
     EvaluationConfig,
     ExecutionConfig,
-    AggregationConfig,  # F1 Fix: Import AggregationConfig
     LocalConfig,  # F12 Fix: Import for validation tests
-    SlurmConfig,
+    PathsConfig,
     SlurmResourceConfig,
     load_config,
 )

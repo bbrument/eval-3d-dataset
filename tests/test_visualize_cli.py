@@ -9,7 +9,6 @@ import json
 import subprocess
 from pathlib import Path
 
-import pytest
 import yaml
 from click.testing import CliRunner
 
@@ -94,6 +93,7 @@ def test_gt_renders_go_to_workspace_not_published_kit(tmp_path, monkeypatch):
     (writable-by-us) published gt/ kit that gt_root/gt_artifacts_root point to."""
     import numpy as np
     import trimesh
+
     import src.pipeline.visualize as viz
     from src.config import Config
 

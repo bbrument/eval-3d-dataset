@@ -3,12 +3,11 @@
 from pathlib import Path
 
 import numpy as np
-from tqdm import tqdm
 
 from ..config import Config
 from ..core.camera import load_cameras_auto
 from ..core.mesh import load_mesh
-from ..core.sampling import upsample_mesh, downsample_pcd
+from ..core.sampling import downsample_pcd, upsample_mesh
 from ..core.visibility import compute_visibility_count
 
 
@@ -63,6 +62,7 @@ def proxy_curvature(config: Config, object_name: str, force: bool = False):
         (proxy vertices, vertex curvature).
     """
     import trimesh
+
     from ..core.proxy import tiled_curvature
     ev = config.evaluation
     radius = 1.0 if ev.curvature_radius is None else ev.curvature_radius
@@ -119,9 +119,10 @@ def preprocess_gt(
     # Step 1: Clean GT mesh by visibility if requested
     if clean_gt and (not cleaned_mesh_path.exists() or force):
         print(f"  Cleaning GT mesh by visibility (use_masks={config.cleanup.use_masks})...")
-        from ..core.mesh import save_mesh, filter_mesh_by_vertex_mask
-        from ..core.visibility import filter_by_visibility
         import trimesh
+
+        from ..core.mesh import filter_mesh_by_vertex_mask, save_mesh
+        from ..core.visibility import filter_by_visibility
         
         cameras_path = config.get_cameras_path(object_name)
         masks_dir = config.get_masks_dir(object_name)
@@ -176,12 +177,12 @@ def preprocess_gt(
             
             gt_dir.mkdir(parents=True, exist_ok=True)
             save_mesh(cleaned_mesh, cleaned_mesh_path)
-            print(f"  Saved cleaned GT mesh")
+            print("  Saved cleaned GT mesh")
     
     # Use cleaned mesh if available, otherwise raw mesh
     if cleaned_mesh_path.exists():
         mesh_to_use = cleaned_mesh_path
-        print(f"  Using cleaned GT mesh")
+        print("  Using cleaned GT mesh")
     else:
         # If not cleaned, we still need to merge parts for sampling
         import trimesh
@@ -193,7 +194,7 @@ def preprocess_gt(
             else:
                 merged_mesh = trimesh.util.concatenate([merged_mesh, m])
         mesh = merged_mesh
-        print(f"  Using raw merged GT mesh")
+        print("  Using raw merged GT mesh")
     
     if cleaned_mesh_path.exists():
         mesh = load_mesh(cleaned_mesh_path)
@@ -201,7 +202,7 @@ def preprocess_gt(
     print(f"  Final mesh: {len(mesh.vertices)} vertices, {len(mesh.faces)} faces")
 
     if gt_pcd_path.exists() and not force:
-        print(f"  Loading existing gt_pcd.npy")
+        print("  Loading existing gt_pcd.npy")
         gt_pcd = np.load(gt_pcd_path)
     else:
         print(f"  Upsampling mesh (density={config.evaluation.downsample_density})")
@@ -226,7 +227,7 @@ def preprocess_gt(
 
         gt_dir.mkdir(parents=True, exist_ok=True)
         np.save(gt_pcd_path, gt_pcd)
-        print(f"  Saved gt_pcd.npy")
+        print("  Saved gt_pcd.npy")
 
         # Companion .ply of the same cloud, for inspection in a mesh viewer. The .npy is
         # the one the pipeline reads; this is purely so the resampled cloud can be looked
@@ -266,19 +267,19 @@ def preprocess_gt(
     if compute_curvature:
         curvature_path = attributes_dir / "curvature_values.npy"
         if curvature_path.exists() and not force:
-            print(f"  Curvature already exists, skipping")
+            print("  Curvature already exists, skipping")
         else:
             # on the proxy of the raw GT (cached), then to gt_pcd, which lies on a subset of that surface
             points, vertex_curvature = proxy_curvature(config, object_name, force=force)
             curvature = _to_points(vertex_curvature, points, gt_pcd)
             del points, vertex_curvature
             np.save(curvature_path, curvature)
-            print(f"  Saved curvature_values.npy")
+            print("  Saved curvature_values.npy")
 
     if compute_visibility:
         visibility_path = attributes_dir / "visibility_count.npy"
         if visibility_path.exists() and not force:
-            print(f"  Visibility already exists, skipping")
+            print("  Visibility already exists, skipping")
         else:
             cameras_path = config.get_cameras_path(object_name)
             masks_dir = config.get_masks_dir(object_name)
@@ -297,7 +298,7 @@ def preprocess_gt(
                     f"masks directory is missing: {masks_dir}."
                 )
             if True:
-                print(f"  Computing visibility counts")
+                print("  Computing visibility counts")
                 cameras = load_cameras_auto(cameras_path)
                 visibility = compute_visibility_count(
                     gt_pcd, mesh, cameras, masks_dir, show_progress=True,

@@ -1,13 +1,12 @@
 """Mesh cleanup via visibility-based filtering."""
 
-from pathlib import Path
 
 import numpy as np
 
 from ..config import Config
 from ..core.camera import load_cameras_auto
-from ..core.mesh import load_mesh, save_mesh, filter_mesh_by_vertex_mask
-from ..core.visibility import filter_by_visibility, filter_by_issue_watertight
+from ..core.mesh import filter_mesh_by_vertex_mask, load_mesh, save_mesh
+from ..core.visibility import filter_by_issue_watertight, filter_by_visibility
 
 
 def cleanup_mesh(

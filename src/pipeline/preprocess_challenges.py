@@ -12,7 +12,6 @@ from ..core.camera import PIXEL_CENTRE_TRUNCATE, load_cameras_auto
 from ..core.mesh import load_mesh
 from ..core.visibility import project_to_pixels, ray_visibility_check
 
-
 COLOR_THRESHOLDS = {
     "red": {"R_min": 200, "G_max": 100, "B_max": 100},
     "yellow": {"R_min": 200, "G_min": 200, "B_max": 100},
@@ -72,7 +71,7 @@ def _process_ply(
     print(f"    Red vertices: {n_red:,} / {len(mesh.vertices):,} ({100*n_red/len(mesh.vertices):.1f}%)")
 
     if n_red == 0:
-        print(f"    WARNING: no red vertices found")
+        print("    WARNING: no red vertices found")
         return np.zeros(len(gt_pcd), dtype=bool)
 
     return _transfer_mesh_mask_to_pcd(mesh.vertices, red_mask, gt_pcd, max_dist)

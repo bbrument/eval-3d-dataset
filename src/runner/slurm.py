@@ -7,9 +7,8 @@ from pathlib import Path
 
 from jinja2 import Environment, FileSystemLoader
 
-from .base import Job, JobRunner
 from ..config import Config
-
+from .base import Job, JobRunner
 
 # Pattern for valid job names (alphanumeric, underscore, hyphen)
 SAFE_NAME_PATTERN = re.compile(r"^[a-zA-Z0-9_-]+$")

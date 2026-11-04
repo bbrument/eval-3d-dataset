@@ -1,8 +1,8 @@
 """Mesh coloring by metric values."""
 
+import matplotlib.pyplot as plt
 import numpy as np
 import trimesh
-import matplotlib.pyplot as plt
 
 
 def color_mesh_by_metric(

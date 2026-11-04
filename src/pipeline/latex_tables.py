@@ -2,12 +2,10 @@
 
 import json
 import re
-from pathlib import Path
 
 import numpy as np
 
 from ..config import Config
-
 
 METHODS_ORDER = [
     "meshroom",
@@ -153,9 +151,6 @@ def generate_chamfer_table(
     """
     data = _collect_chamfer_data(config)
     means = _compute_aggregated_means(config, data) if include_mean else {}
-
-    n_methods = len(METHODS_ORDER)
-    n_cols = 1 + n_methods * 3  # object col + 3 per method
 
     col_spec = "l" + "".join("rrr" for _ in METHODS_ORDER)
 

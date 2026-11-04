@@ -1,9 +1,9 @@
 """Tests for rendering module."""
 
+
 import numpy as np
-import trimesh
 import pytest
-from pathlib import Path
+import trimesh
 
 
 @pytest.mark.gl

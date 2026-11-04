@@ -87,7 +87,7 @@ def load_cameras(npz_path: str | Path) -> dict[str, np.ndarray]:
     n_views = sum(1 for k in data.keys() if k.startswith("world_mat_") and "inv" not in k)
     
     # Check if inverse matrices are available
-    has_inverses = f"camera_mat_inv_0" in data and f"world_mat_inv_0" in data
+    has_inverses = "camera_mat_inv_0" in data and "world_mat_inv_0" in data
 
     cameras = {
         "K": [],
