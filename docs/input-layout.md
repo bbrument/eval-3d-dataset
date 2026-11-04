@@ -10,18 +10,18 @@ Every dataset uses the same on-disk shape. `{object}` is substituted from `datas
 ```
 <eval_root>/                                 # paths.eval_root, e.g. ./eval/{object}
 ├── Groundtruth/
-│   ├── gt_mesh.ply                          # the GT mesh — you supply this
+│   ├── gt_mesh.ply                          # the GT mesh, you supply this
 │   ├── gt_cleaned.ply                       # written by preprocess-gt --clean-gt
 │   ├── gt_pcd.npy                           # written by preprocess-gt: (N,3) float
 │   ├── gt_pcd_provenance.json               # source mesh, density, N, timestamp
 │   ├── attributes/
 │   │   ├── curvature_values.npy             # (N,) float32
-│   │   └── visibility_count.npy             # (N,) int32 — cameras seeing each point
+│   │   └── visibility_count.npy             # (N,) int32, cameras seeing each point
 │   └── challenges/                          # optional (N,) bool masks, see challenges.md
 │       ├── excluded.npy                     # True = never evaluated
 │       └── <property>.npy                   # True = in the zone (e.g. lambertian.npy)
 └── <method>/                                # one per entry in dataset.methods
-    ├── results_raw/mesh.ply                 # your reconstruction — the only input you supply
+    ├── results_raw/mesh.ply                 # your reconstruction, the only input you supply
     ├── results_cleaned/mesh.ply             # written by cleanup
     └── eval_results/                        # written by evaluate / curves
         ├── metrics.json
@@ -34,7 +34,7 @@ Every dataset uses the same on-disk shape. `{object}` is substituted from `datas
 ```
 
 Every `.npy` under `attributes/` and `challenges/` has exactly `N` entries and is indexed on
-`gt_pcd.npy` — **not** on the mesh vertices. If you distribute these arrays alongside a GT
+`gt_pcd.npy`, **not** on the mesh vertices. If you distribute these arrays alongside a GT
 mesh, ship `gt_pcd.npy` with them or they index nothing.
 
 **Published Martine dataset.** The GT side is not rebuilt: `config/martine.yaml` reads the evaluation kit of
@@ -58,5 +58,5 @@ Martine terms (resolution tiers `d1/d2/d4/d8`, MVS/MVPS captures) and the camera
 sorted so the choice is deterministic. Name yours `gt_mesh.ply` and there is no ambiguity.
 
 **Cameras.** Searched in order: `cameras.npz`, `sfm.json` (AliceVision SfMData),
-`cameras.json`, `*.sfm`. All meshes must already share a frame — the pipeline does not
+`cameras.json`, `*.sfm`. All meshes must already share a frame: the pipeline does not
 register.

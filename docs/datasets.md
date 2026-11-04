@@ -7,22 +7,22 @@ The configs shipped in `config/`, one per dataset, and how to add your own.
 The pipeline was built for Martine, a millimetre-scale 84-view benchmark, and applies unchanged to any
 dataset that follows the
 [input layout](input-layout.md). Everything dataset-specific lives in a config file under
-`config/` — `src/` carries no dataset assumptions.
+`config/`; `src/` carries no dataset assumptions.
 
 ## Bundled configurations
 
-These are the configs used in practice, committed with placeholder paths — copy one and
+These are the configs used in practice, committed with placeholder paths: copy one and
 repoint `paths:` before use. Machine-specific copies with real paths live next to them as
 `config/<name>.local.yaml`, which are git-ignored and never committed. `config/default.yaml`
 holds the base defaults and documents every available key.
 
 | config | dataset |
 |---|---|
-| `config/martine.yaml` | Martine (mm, 84 views) — the benchmark evaluation |
-| `config/skoltech3d.yaml` | Skoltech3D (`wooden_trex` and following; metre→millimetre units handling — see [the units trap](configuration.md#the-units-trap-sk3d)) |
+| `config/martine.yaml` | Martine (mm, 84 views), the benchmark evaluation |
+| `config/skoltech3d.yaml` | Skoltech3D (`wooden_trex` and following; metre→millimetre units handling, see [the units trap](configuration.md#the-units-trap-skoltech3d)) |
 | `config/diligentmv.yaml` | DiLiGenT-MV |
 | `config/dtu.yaml` | DTU |
-| `config/evalmvx.yaml` | EvalMVX (Yang et al.) — 25 objects, 20 views |
+| `config/evalmvx.yaml` | EvalMVX (Yang et al.), 25 objects, 20 views |
 | `config/lucesmv.yaml` | LUCES-MV |
 | `config/default.yaml` | Base defaults; reference for every available key |
 
@@ -31,6 +31,6 @@ holds the base defaults and documents every available key.
 1. Arrange the data as in the [input layout](input-layout.md).
 2. Copy `config/martine.yaml`, set `paths.eval_root` / `paths.data_root`, list your
    `dataset.objects` and `dataset.methods`.
-3. Set the thresholds in **your mesh's units** — re-read
-   [the units trap](configuration.md#the-units-trap-sk3d) if your meshes are not in millimetres.
+3. Set the thresholds in **your mesh's units**; re-read
+   [the units trap](configuration.md#the-units-trap-skoltech3d) if your meshes are not in millimetres.
 4. Run the [end-to-end flow](pipeline.md).

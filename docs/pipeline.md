@@ -35,8 +35,8 @@ Scope any stage with `-o/--object` and `-m/--method`; re-run with `-f/--force`.
 
 `preprocess-gt --clean-gt` removes ground-truth points that **no camera sees**, and resamples
 from the cleaned surface. For a solid object this changes almost nothing; for an open,
-foliage-like object it removes the entire unobservable interior. That is intended — scoring a
-reconstruction on surfaces the rig never observed measures nothing — but it means GT point
+foliage-like object it removes the entire unobservable interior. That is intended (scoring a
+reconstruction on surfaces the rig never observed measures nothing), but it means GT point
 counts are not comparable across the change. `gt_pcd_provenance.json` records which mesh the
 cloud came from, the sampling density and the resulting count.
 
@@ -44,12 +44,12 @@ cloud came from, the sampling density and the resulting count.
 
 `eval-pipeline --help` lists every subcommand. Beyond the core flow above:
 
-- `run` — orchestrate cleanup → evaluate → curves over all objects and methods in one call
+- `run`: orchestrate cleanup → evaluate → curves over all objects and methods in one call
   (`--slurm` to dispatch on a cluster; see [running on a cluster](cluster.md)).
-- `aggregate` — collect per-cell `metrics.json` into summary tables across objects and methods.
-- `latex` — emit a LaTeX results table from the aggregated metrics.
-- `figures` — build a paper's figures and tables from a YAML specification ([figures.md](figures.md)).
-- `visualize` — render per-point metric colourings onto the reconstruction (needs OSMesa; see
+- `aggregate`: collect per-cell `metrics.json` into summary tables across objects and methods.
+- `latex`: emit a LaTeX results table from the aggregated metrics.
+- `figures`: build a paper's figures and tables from a YAML specification ([figures.md](figures.md)).
+- `visualize`: render per-point metric colourings onto the reconstruction (needs OSMesa; see
   the visualization extra in [install](../README.md#install)).
-- `apply-masks`, `preprocess-challenges` — build and apply the optional
+- `apply-masks`, `preprocess-challenges`: build and apply the optional
   per-point challenge masks described in [configuration](configuration.md#masks).
