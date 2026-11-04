@@ -6,12 +6,10 @@ import pytest
 from pathlib import Path
 
 
+@pytest.mark.gl
 def test_offscreen_renderer_basic():
     """OffscreenRenderer should render a simple colored mesh."""
-    from src.core.rendering import OffscreenRenderer, PYRENDER_AVAILABLE
-
-    if not PYRENDER_AVAILABLE:
-        pytest.skip("pyrender not available")
+    from src.core.rendering import OffscreenRenderer
 
     # Create simple triangle, wound to FACE the camera (normal -Z, toward an OpenCV camera at
     # the origin looking +Z): pyrender culls back faces, so [0, 1, 2] rendered nothing.
@@ -75,12 +73,10 @@ def test_crop_to_content():
     assert cropped.shape[1] == 30
 
 
+@pytest.mark.gl
 def test_render_views(tmp_path):
     """render_views should render multiple camera views to files."""
-    from src.core.rendering import render_views, PYRENDER_AVAILABLE
-
-    if not PYRENDER_AVAILABLE:
-        pytest.skip("pyrender not available")
+    from src.core.rendering import render_views
 
     # Create simple mesh
     vertices = np.array([[0, 0, 1], [1, 0, 1], [0.5, 1, 1]], dtype=np.float32)

@@ -27,6 +27,9 @@ visualization = [
     "PyOpenGL>=3.1.0",
     "fast-simplification>=0.1.13",  # trimesh simplify_quadric_decimation (GT/method mesh decimation)
 ]
+
+[dependency-groups]
+# Installed by default by `uv sync`, so `uv run pytest` works out of the box.
 dev = [
     "pytest>=7.0.0",
     "pytest-cov>=4.0.0",
@@ -47,3 +50,9 @@ build-backend = "setuptools.build_meta"
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["src*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+    "gl: needs pyrender with a working OpenGL backend (skipped otherwise)",
+]
