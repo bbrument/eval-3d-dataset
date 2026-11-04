@@ -117,7 +117,8 @@ prf:
 
 # One representative per family.
 radar:
-  methods: [realityscan, colmap, pgsr, neus2, rnbneus2]
+  # Neuralangelo next to NeuS2 (Baptiste, 04/11/2026); a failed object leaves the method's pools, as in the PRF
+  methods: [realityscan, colmap, pgsr, neus2, neuralangelo, rnbneus2]
   tier: d4
   threshold: 0.5
   properties: [lambertian, specular, transparent, not_textured, fine_structure]
