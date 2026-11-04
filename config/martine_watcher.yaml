@@ -50,6 +50,7 @@ evaluation:
   max_dist: 4.0
   curvature_radius: 1.0               # VCM curvature: ball radius r (mm)
   curvature_tube: 0.5                 # VCM curvature: tube thickness R (mm)
+  curvature_max_edge: 0.15            # VCM curvature: GT edges split down to this length (mm) = non-CT GT density
   fscore_thresholds: [0.5, 1.0, 1.5, 2.0, 5.0]
 
 aggregation:
