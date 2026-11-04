@@ -1,13 +1,10 @@
-<div align="center">
-<h1>eval-3d</h1>
+# eval-3d
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Paper](https://img.shields.io/badge/NeurIPS%202026-Paper-red.svg)](https://martine-benchmark.github.io/)
 [![Dataset DOI](https://img.shields.io/badge/DOI-10.7910%2FDVN%2F2BEPEH-blue.svg)](https://doi.org/10.7910/DVN/2BEPEH)
 [![Python](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](https://www.python.org/)
 [![tests](https://github.com/martine-benchmark/eval-3d/actions/workflows/tests.yml/badge.svg)](https://github.com/martine-benchmark/eval-3d/actions/workflows/tests.yml)
-
-</div>
 
 **eval-3d** scores reconstructed meshes against a ground-truth mesh: Chamfer distance, precision / recall /
 F-score at fixed thresholds, dense PR curves, and a `coverage` value that says how much of each cloud the numbers
@@ -32,7 +29,7 @@ uv run eval-pipeline -c config/martine.local.yaml evaluate -o rock   # Chamfer, 
 ```
 
 `runs/rock/my_method/eval_results/metrics.json` then holds the Chamfer distance, `coverage` and the F-score at
-0.5–5 mm ([docs/metrics.md](docs/metrics.md)); here `"chamfer": 0.011`, `"coverage": 1.0` and every `fscore` at
+0.5 to 5 mm ([docs/metrics.md](docs/metrics.md)); here `"chamfer": 0.011`, `"coverage": 1.0` and every `fscore` at
 1.0. `run` chains both stages over every object and method.
 
 ## Install
@@ -43,7 +40,7 @@ uv sync --extra visualization    # + `visualize` (pyrender, needs an OpenGL or O
 ```
 
 Without uv: `pip install -e ".[visualization]"` in a Python ≥ 3.10 environment. No GPU is needed. Memory is the
-constraint: nearest-neighbour queries run over 10–30 M points. The Quick start (8 M-vertex GT used as the
+constraint: nearest-neighbour queries run over 10 to 30 M points. The Quick start (8 M-vertex GT used as the
 reconstruction) takes about 25 min and 34 GB on 16 cores; a COLMAP mesh of rock at d8, 5 min and 7 GB. The paper's
 Martine jobs reserved 256 GB for the largest objects.
 
@@ -99,7 +96,6 @@ run only when `EVAL_FIGURES_REF` points to the paper's evaluation outputs.
 | Repository | Role |
 | :-- | :-- |
 | [martine-dataset](https://github.com/martine-benchmark/martine-dataset) | Martine data: download, file format, converters to method inputs |
-| [eval-3d](https://github.com/martine-benchmark/eval-3d) | Mesh-vs-ground-truth evaluation (Chamfer, F-score, per-property analysis) |
 | [contour-registration](https://github.com/martine-benchmark/contour-registration) | Mesh-to-image alignment by multi-view contour ICP |
 | [martine-build](https://github.com/martine-benchmark/martine-build) | Dataset construction pipeline (work in progress) |
 
@@ -115,7 +111,7 @@ If you use this code, please cite the Martine paper:
 @inproceedings{martine2026,
   title={Martine: Benchmarking Multi-View 3D Surface Reconstruction Across Viewpoint Coverage, Resolution, and Lighting},
   author={Bruneau, Robin and Brument, Baptiste and Giraud, Frederic and Sigrist, Bastian and Jecklin, Sascha and Fürnstahl, Philipp and Menze, Bjoern and Calvet, Lilian},
-  booktitle={NeurIPS},
+  booktitle={NeurIPS Evaluations \& Datasets (E\&D) Track},
   year={2026}
 }
 ```

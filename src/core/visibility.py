@@ -8,7 +8,12 @@ import trimesh
 from PIL import Image
 from tqdm import tqdm
 
-from .camera import PIXEL_CENTRE_ALICEVISION, PIXEL_CENTRE_TRUNCATE, get_camera_centers, project_points  # noqa: F401 (conventions re-exported)
+from .camera import (  # noqa: F401 (conventions re-exported)
+    PIXEL_CENTRE_ALICEVISION,
+    PIXEL_CENTRE_TRUNCATE,
+    get_camera_centers,
+    project_points,
+)
 
 
 def load_mask(mask_path: str | Path) -> np.ndarray:

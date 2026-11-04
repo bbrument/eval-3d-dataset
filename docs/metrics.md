@@ -11,7 +11,7 @@ Each object×method cell writes one `eval_results/metrics.json`.
 | `chamfer_a2b` | mean distance reconstruction → GT over points within `max_dist`. **`NaN` if none survived.** |
 | `chamfer_b2a` | mean distance GT → reconstruction, same rule. |
 | `chamfer` | mean of both directions; `NaN` propagates. |
-| `coverage_a2b` | fraction of reconstruction points within `max_dist` — the share that contributed. |
+| `coverage_a2b` | fraction of reconstruction points within `max_dist`, the share that contributed. |
 | `coverage_b2a` | same, GT direction. |
 | `coverage` | `min` of the two. **Read this before the Chamfer.** High accuracy at 20% coverage describes a fragment, not a reconstruction. |
 | `n_kept_a2b` / `n_kept_b2a` | point counts behind each Chamfer. |
