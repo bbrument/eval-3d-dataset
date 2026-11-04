@@ -23,7 +23,7 @@ Each object×method cell writes one `eval_results/metrics.json`.
 
 **`NaN` is a result, not a crash.** It means the cell produced nothing measurable at this
 `max_dist`, and it is deliberately not `0.0` so it cannot be averaged into a ranking as though
-it were perfect. See [CHANGELOG entry 1](../CHANGELOG.md) for why this matters.
+it were perfect.
 
 Dense curves live in `eval_results/curves/` as four aligned arrays (`thresholds`, `precision`,
 `recall`, `fscore`), independent of the coarse reporting grid.
