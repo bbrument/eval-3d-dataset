@@ -28,6 +28,9 @@ def test_martine_example_spec_loads():
         assert t.methods == spec.prf.methods and t.method_tiers == {"meshroom": ["d4"]}
         assert (t.fscore, t.mean) == (0.5, "pooled")
     assert spec.radar.threshold == 0.5 and spec.prf.n_thresholds == 201
+    # Neuralangelo next to NeuS2 on the radar (Baptiste, 04/11/2026), in the PRF legend order and style
+    assert spec.radar.methods == ["realityscan", "colmap", "pgsr", "neus2", "neuralangelo", "rnbneus2"]
+    assert [m for m in spec.prf.methods if m in spec.radar.methods] == spec.radar.methods
     # RealityScan view subsets at d4 (Linux rerun, 25/10/2026), as for COLMAP, PGSR, NeuS2 and RNb-NeuS2
     assert spec.cells.declared["realityscan"].views == [40, 20, 10, 5]
 
