@@ -1,3 +1,5 @@
+<img src="assets/banner.png" width="100%" alt="Error maps of five methods on a Martine object">
+
 # eval-3d
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
