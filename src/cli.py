@@ -226,6 +226,7 @@ def watch(ctx, dry_run, scan_mode, state_file):
     """
     import logging
     from pathlib import Path
+
     from .watcher.scanner import run_watcher
 
     logging.basicConfig(
@@ -255,6 +256,7 @@ def watch(ctx, dry_run, scan_mode, state_file):
 def watch_status(ctx, state_file):
     """Show status of watched evaluation jobs."""
     from pathlib import Path
+
     from .watcher.scanner import WatcherState
 
     config_path = Path(ctx.obj["config_path"])
@@ -294,10 +296,10 @@ def watch_status(ctx, state_file):
 def aggregate(ctx, visibility_groups, curvature_thresholds):
     """Aggregate metrics across all objects with dynamic binning."""
     from .pipeline.aggregate import (
+        aggregate_challenges,
+        aggregate_curvature,
         aggregate_global,
         aggregate_visibility,
-        aggregate_curvature,
-        aggregate_challenges,
         discover_methods,
         save_aggregated_results,
     )

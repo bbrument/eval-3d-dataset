@@ -10,11 +10,10 @@ import pytest
 
 from src.config import CleanupConfig, load_config
 from src.core.visibility import (
-    compute_auto_dilation,
-    AUTO_DILATION_REF_PX,
     AUTO_DILATION_REF_N_PIXELS,
+    AUTO_DILATION_REF_PX,
+    compute_auto_dilation,
 )
-
 
 FULL_W, FULL_H = 9568, 6376  # Martine full resolution
 

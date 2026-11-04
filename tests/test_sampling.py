@@ -1,10 +1,9 @@
 """Tests for core/sampling.py - mesh upsampling and downsampling."""
 
 import numpy as np
-import pytest
 from sklearn.neighbors import NearestNeighbors  # F7 Fix: Move import to top
 
-from src.core.sampling import sample_single_tri, upsample_mesh, downsample_pcd
+from src.core.sampling import downsample_pcd, sample_single_tri, upsample_mesh
 
 
 class TestSampleSingleTri:

@@ -4,7 +4,7 @@ import json
 import logging
 import shlex
 import subprocess
-from dataclasses import dataclass, field, asdict
+from dataclasses import asdict, dataclass, field
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
@@ -483,7 +483,7 @@ class SlurmSubmitter:
         gt_pcd = gt_dir / "gt_pcd.npy"
 
         if not gt_pcd.exists():
-            return False, f"GT not ready: missing gt_pcd.npy"
+            return False, "GT not ready: missing gt_pcd.npy"
         return True, "GT ready"
 
     def submit_preprocess_gt(self, object_name: str) -> Optional[str]:
@@ -514,7 +514,7 @@ class SlurmSubmitter:
             f"--partition={slurm.partition}",
             f"--cpus-per-task={slurm.eval.cpus}",
             f"--mem={slurm.eval.mem_gb}G",
-            f"--time=08:00:00",
+            "--time=08:00:00",
             f"--job-name={job_name}",
             f"--output={output_file}",
             f"--error={error_file}",

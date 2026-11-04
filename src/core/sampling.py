@@ -87,12 +87,6 @@ def upsample_mesh(
     n1 = np.floor(l1 / thr).astype(int)
     n2 = np.floor(l2 / thr).astype(int)
 
-    # Prepare arguments for parallel processing
-    args = (
-        (n1[i, 0], n2[i, 0], v1[i : i + 1], v2[i : i + 1], tri_vert[i : i + 1, 0])
-        for i in range(len(n1))
-    )
-
     # Handle edge case: no valid triangles
     if len(n1) == 0:
         return vertices.astype(np.float32)

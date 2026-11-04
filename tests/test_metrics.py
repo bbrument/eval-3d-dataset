@@ -6,8 +6,8 @@ import numpy as np
 import pytest
 
 from src.core.metrics import (
-    compute_distances,
     compute_chamfer,
+    compute_distances,
     compute_fscore_curve,
     compute_metrics,
 )

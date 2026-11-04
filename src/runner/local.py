@@ -1,16 +1,15 @@
 """Local job runner with resource monitoring."""
 
 import uuid
-from concurrent.futures import ProcessPoolExecutor, Future, as_completed
-from typing import Callable
+from concurrent.futures import Future, ProcessPoolExecutor, as_completed
 
 import psutil
 from tqdm import tqdm
 
-from .base import Job, JobRunner
 from ..config import Config, load_config
 from ..pipeline.cleanup import cleanup_mesh
 from ..pipeline.evaluate import evaluate
+from .base import Job, JobRunner
 
 
 def _run_job(job_dict: dict) -> tuple[str, bool]:

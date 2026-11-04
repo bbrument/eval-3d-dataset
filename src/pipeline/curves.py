@@ -1,12 +1,11 @@
 """Compute dense precision/recall/F-score curves from saved distances."""
 
-from pathlib import Path
 
 import numpy as np
 
 from ..config import Config
+from ..core.masking import apply_exclude, load_gt_exclude
 from ..core.metrics import compute_fscore_curve
-from ..core.masking import load_gt_exclude, apply_exclude
 
 
 def compute_curves(

@@ -1,9 +1,22 @@
 """Offscreen mesh rendering with pyrender."""
 
 import os
+from pathlib import Path
+
+import cv2
+import matplotlib.pyplot as plt
+import numpy as np
+import trimesh
+from matplotlib.backends.backend_agg import FigureCanvasAgg
+from matplotlib.figure import Figure
+from PIL import Image
+from tqdm import tqdm
+
+# Must be set before pyrender (hence PyOpenGL) is imported below.
 os.environ.setdefault("PYOPENGL_PLATFORM", "osmesa")
 
-# Couleur de fond du rendu, configurable via env EVAL_BG="r,g,b" (0-1). Défaut: blanc (non-cassant).
+
+# Render background colour, set with the env var EVAL_BG="r,g,b" (0-1). Default: white.
 def _eval_bg():
     s = os.environ.get("EVAL_BG", "1.0,1.0,1.0")
     try:
@@ -11,17 +24,9 @@ def _eval_bg():
         return [r, g, b, 1.0]
     except Exception:
         return [1.0, 1.0, 1.0, 1.0]
-_BG = _eval_bg()
 
-import cv2
-import numpy as np
-import trimesh
-import matplotlib.pyplot as plt
-from matplotlib.figure import Figure
-from matplotlib.backends.backend_agg import FigureCanvasAgg
-from pathlib import Path
-from PIL import Image
-from tqdm import tqdm
+
+_BG = _eval_bg()
 
 try:
     import pyrender

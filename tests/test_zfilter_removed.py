@@ -12,8 +12,8 @@ cannot silently regress:
 
 import numpy as np
 
-from src.core.sampling import remove_nan_points
 from src.core.metrics import compute_distances
+from src.core.sampling import remove_nan_points
 
 
 def test_points_below_gt_floor_are_kept():

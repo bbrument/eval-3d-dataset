@@ -2,7 +2,6 @@
 
 import numpy as np
 import trimesh
-import pytest
 
 
 def test_color_mesh_by_metric_sets_vertex_colors():

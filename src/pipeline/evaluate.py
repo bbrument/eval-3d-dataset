@@ -6,11 +6,10 @@ from pathlib import Path
 import numpy as np
 
 from ..config import Config
+from ..core.masking import apply_exclude, load_gt_exclude
 from ..core.mesh import load_mesh
-from ..core.sampling import upsample_mesh, downsample_pcd, remove_nan_points
 from ..core.metrics import compute_distances, compute_metrics
-from ..core.masking import load_gt_exclude, apply_exclude
-import cv2
+from ..core.sampling import downsample_pcd, remove_nan_points, upsample_mesh
 
 
 def evaluate(
@@ -106,11 +105,11 @@ def evaluate(
     data_pcd = remove_nan_points(data_pcd)
     print(f"  After NaN removal: {len(data_pcd)} points")
 
-    print(f"  Downsampling data point cloud")
+    print("  Downsampling data point cloud")
     data_down = downsample_pcd(data_pcd, density, shuffle=True, seed=seed)
     print(f"  Downsampled to {len(data_down)} points")
 
-    print(f"  Computing distances")
+    print("  Computing distances")
     dist_data2gt, idx_data2gt = compute_distances(data_down, gt_pcd)
     dist_gt2data, idx_gt2data = compute_distances(gt_pcd, data_down)
 
@@ -124,7 +123,7 @@ def evaluate(
         dist_data2gt, dist_gt2data, idx_data2gt, exclude
     )
 
-    print(f"  Computing metrics")
+    print("  Computing metrics")
     metrics = compute_metrics(
         dist_data2gt_filtered,
         dist_gt2data_filtered,

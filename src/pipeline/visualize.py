@@ -5,27 +5,26 @@ import os
 from pathlib import Path
 
 import numpy as np
+import trimesh
+from PIL import Image
 from scipy.spatial import cKDTree
 
 from ..config import Config
 from ..core.camera import load_cameras_auto
-from ..core.mesh import load_mesh
-from ..core.nearest import NearestPointIndex
 from ..core.colormap import (
-    color_uniform,
     color_by_accuracy,
     color_by_completeness,
-    color_by_visibility,
     color_by_curvature,
+    color_by_visibility,
+    color_uniform,
 )
+from ..core.mesh import load_mesh
+from ..core.nearest import NearestPointIndex
 from ..core.rendering import (
-    render_views,
     add_colorbar,
     check_pyrender,
-    PYRENDER_AVAILABLE,
+    render_views,
 )
-from PIL import Image
-import trimesh
 
 
 def points_to_mesh(points: np.ndarray, colors: np.ndarray, point_size: float = 0.5) -> trimesh.Trimesh:
@@ -277,12 +276,12 @@ def visualize_method(
                 if method_output.exists() and not force:
                     existing = list(method_output.glob("view_*.png"))
                     if existing:
-                        print(f"  uniform (method): already exists, skipping")
+                        print("  uniform (method): already exists, skipping")
                         results["uniform_method"] = existing
                     else:
                         results["uniform_method"] = []
                 else:
-                    print(f"  Generating uniform (method) visualizations...")
+                    print("  Generating uniform (method) visualizations...")
                     colored = color_uniform(method_mesh, excluded_mask=method_excluded_mask)
                     paths, _ = render_views(colored, cameras, view_indices, method_output,
                                         scale=scale, crop=crop, crop_margin=crop_margin,
@@ -297,12 +296,12 @@ def visualize_method(
                 if gt_output.exists() and not force:
                     existing = list(gt_output.glob("view_*.png"))
                     if existing:
-                        print(f"  uniform (GT): already exists, skipping")
+                        print("  uniform (GT): already exists, skipping")
                         results["uniform_gt"] = existing
                     else:
                         results["uniform_gt"] = []
                 else:
-                    print(f"  Generating uniform (GT) visualizations...")
+                    print("  Generating uniform (GT) visualizations...")
                     colored = color_uniform(gt_mesh, excluded_mask=gt_excluded_mask)
                     paths, computed_bboxes = render_views(colored, cameras, view_indices, gt_output,
                                         scale=scale, crop=crop, crop_margin=crop_margin,
@@ -313,7 +312,7 @@ def visualize_method(
                         crop_bboxes = computed_bboxes
                     print(f"    Generated {len(paths)} images")
             elif gt_uniform_rendered:
-                print(f"  uniform (GT): already rendered for bbox computation")
+                print("  uniform (GT): already rendered for bbox computation")
             continue
 
         # Check if already done
