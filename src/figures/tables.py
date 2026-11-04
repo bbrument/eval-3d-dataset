@@ -109,7 +109,8 @@ def chamfer_table(spec: FiguresSpec, results: Results, table: Optional[ChamferTa
         "\\footnotesize",
         f"\\caption{{{s.caption}}}",
         f"\\resizebox{{\\text{'height' if s.sideways else 'width'}}}{{!}}{{%",
-        "\\begin{tabular}{l" + "r" * len(cols) + "}",
+        # a method run at a single tier is centred under its name (right-aligned it reads as a half-empty pair)
+        "\\begin{tabular}{l" + "".join(("r" if len(ts) > 1 else "c") * len(ts) for _, ts in groups) + "}",
         "\\toprule",
         head,
         " ".join(rules),
