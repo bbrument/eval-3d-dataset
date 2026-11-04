@@ -66,3 +66,19 @@ def test_expected_mask_missing_is_an_error(tmp_path):
     (config.get_gt_artifacts_dir("obj1") / "challenges" / "lambertian.npy").unlink()
     with pytest.raises(FileNotFoundError, match="lambertian"):
         radar_values(config, spec, Results(config, spec), properties=props)
+
+
+def test_attribute_axis_on_absolute_value(tmp_path):
+    """abs: the bounds apply to |attribute| (high curvature, concave and convex)."""
+    config = make_config(tmp_path, objects=["obj1"])
+    make_gt(config, "obj1", 4, attributes={"curvature_values": [-1.0, 0.8, 0.1, -0.5]})
+    make_cell(config, "obj1", "alpha_d4", d2g=[0.1, 0.1, 0.9, 0.1], g2d=[0.1, 0.9, 0.1, 0.1], idx=[0, 1, 2, 3])
+    radar = {**RADAR, "properties": [],
+             "attributes": [{"key": "curved", "attribute": "curvature_values", "abs": True, "ge": 0.75},
+                            {"key": "convex", "attribute": "curvature_values", "ge": 0.75}]}
+    spec = make_spec(radar=radar)
+    values, _ = radar_values(config, spec, Results(config, spec), properties={})
+    # |k| >= 0.75: GT 0 and 1, recall 1/2; data points 0 and 1 (nearest GT 0, 1), precision 2/2.
+    assert values["alpha"]["curved"] == pytest.approx(100 * 2 * 1 * 0.5 / 1.5)
+    # signed k >= 0.75: GT 1 only, recall 0.
+    assert values["alpha"]["convex"] == 0.0
