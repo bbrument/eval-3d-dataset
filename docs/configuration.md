@@ -1,9 +1,12 @@
 # Configuration
 
+The config keys that change your numbers, the evaluation masks, and the units trap. Every key and its
+default is in `config/default.yaml`.
+
 [← back to README](../README.md)
 
-Start from `config/martine.yaml` or `config/skoltech3d.yaml`. Both ship with placeholder
-paths; edit the entries under `paths:` and nothing else is required.
+Start from your dataset's config in `config/` ([datasets.md](datasets.md)). Every bundled config ships with
+placeholder paths; edit the entries under `paths:` and nothing else is required.
 
 For the published Martine dataset, `config/martine.yaml` also sets the optional read-only
 inputs of the evaluation kit shipped under `<object>/gt/`: `paths.gt_artifacts_root` (sampled
@@ -24,15 +27,17 @@ Every command takes `-c/--config`; it is required.
 | `evaluation.fscore_thresholds` | mesh units | The reporting grid. `precision`/`recall`/`fscore` are index-aligned with `thresholds`. |
 | `evaluation.curvature_radius` | mesh units | Curvature of `attributes/curvature_values.npy` (Voronoi Covariance Measure): radius r of the connected ball, so the far side of a thin wall is not mixed in. Default `1.0` (`null` = `1.0`). Convex < 0. |
 | `evaluation.curvature_tube` | mesh units | VCM tube thickness R. Default `0.5`. |
-| `cleanup.dilation_radius` | **pixels** | Silhouette dilation before carving reconstructed vertices that project outside every mask. Larger = more forgiving at the border. `12` for both datasets here. |
+| `cleanup.dilation_radius` | **pixels** | Silhouette dilation before carving reconstructed vertices that project outside every mask. Larger = more forgiving at the border. Martine uses `auto` (48 px at full resolution, rescaled to each mask resolution); the other configs use `12`. |
 | `cleanup.z_threshold` | mesh units | Drops reconstructed points below this height (support plane). `null` disables. |
 | `dataset.num_views` | — | Camera views used for masking and visibility. |
 
 ## Masks
 
-`Groundtruth/challenges/*.npy` are boolean arrays over the **GT point cloud**, `True` meaning
-*drop this point*. They combine with logical OR, and the reconstruction side inherits the
-decision through the nearest-neighbour index.
+`challenges/*.npy` are boolean arrays over the **GT point cloud**. Two kinds share the folder:
+`excluded.npy`, where `True` means *drop this point* (unreliable GT), and property masks such as
+`lambertian.npy`, where `True` means *in this zone* (see [challenges.md](challenges.md)). Exclusion masks
+combine with logical OR, and the reconstruction side inherits the decision through the nearest-neighbour
+index.
 
 `excluded.npy` is applied automatically whenever the file exists. Whatever was applied is
 recorded in `metrics["exclude_masks"]`, so a result file states what was done rather than what
