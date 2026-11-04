@@ -22,7 +22,7 @@ list by hand. To add one:
 
 1. In your config `.yaml`, point `paths.gt_root` at the read-only folder holding each object's raw
    ground truth; challenge sources live in its `challenges_raw/` sub-folder (see
-   [docs/configuration.md](docs/configuration.md) and [docs/input-layout.md](docs/input-layout.md)).
+   [docs/configuration.md](configuration.md) and [docs/input-layout.md](input-layout.md)).
 2. Drop a source named after the challenge into `challenges_raw/`, either
    - a copy of the GT mesh with the target region painted **red**, `‹name›.ply`, or
    - per-view binary masks `‹viewId›_‹name›.png`.
