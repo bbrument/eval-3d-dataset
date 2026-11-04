@@ -14,7 +14,3 @@ copy `config/setup_env.example.sh` to `config/setup_env.local.sh` (git-ignored) 
 
 Dispatch the whole flow with `run --slurm`, or submit individual stages. `watch` polls for new
 meshes and submits jobs as they appear; `watch-status` reports on them.
-
-> Helper scripts under `scripts/` were written for one specific machine and still contain
-> absolute paths. They are convenience wrappers, not part of the pipeline — `src/` contains no
-> absolute path.

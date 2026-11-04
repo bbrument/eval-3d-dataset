@@ -1,35 +1,33 @@
-# eval-pipeline — Skoltech3D (wooden_trex et suivants).
+# eval-pipeline — Skoltech3D (wooden_trex and following).
 #
 # Published config: machine paths are placeholders. The real machine paths live
 # in config/skoltech3d.local.yaml (git-ignored) — run with `-c config/skoltech3d.local.yaml`.
 #
-# Paramètres d'évaluation calqués sur `config/lucesmv.yaml` du eval_pipeline plutôt
-# que sur `diligentmv.yaml` : les objets sk3d sont grands (diagonale GT du wooden_trex
-# = 434,9 mm contre ~150 mm pour DiLiGenT-MV), donc `max_dist=2.0` écrêterait une
-# grande part des erreurs réelles.
+# Evaluation parameters modelled on `config/lucesmv.yaml` rather than `diligentmv.yaml`:
+# Skoltech3D objects are large (wooden_trex GT diagonal = 434.9 mm vs ~150 mm for
+# DiLiGenT-MV), so `max_dist=2.0` would clip a large share of the real errors.
 dataset:
   name: "skoltech3d"
 
-  # --- UNITÉS ---------------------------------------------------------------
-  # 🔴 eval-pipeline exprime `downsample_density`, `max_dist` et les seuils de
-  # F-score DANS LES UNITÉS DU MESH. DiLiGenT-MV et LUCES-MV sont en millimètres ;
-  # les meshes sk3d (GT ET reconstructions) sont en MÈTRES. Sans conversion,
-  # `downsample_density: 0.07` vaudrait un pas de 70 mm (une vingtaine de points
-  # pour tout l'objet) et `max_dist: 5.0` vaudrait 5 mètres, donc aucun filtrage :
-  # les métriques seraient absurdes SANS PLANTER. On déclare donc les unités
-  # natives ici, et `scripts/sk3d_trex/s15_build_eval_tree_mm.py` applique le
-  # facteur à la construction de l'arbre -> tout est en mm en aval, comme les
-  # autres datasets, et les chiffres sont comparables aux tables du papier.
+  # --- UNITS ----------------------------------------------------------------
+  # eval-pipeline expresses `downsample_density`, `max_dist` and the F-score
+  # thresholds IN THE MESH UNITS. DiLiGenT-MV and LUCES-MV are in millimetres;
+  # Skoltech3D meshes (GT AND reconstructions) are in METRES. Without conversion,
+  # `downsample_density: 0.07` would be a 70 mm step (a few dozen points for the
+  # whole object) and `max_dist: 5.0` would be 5 metres, i.e. no filtering: the
+  # metrics would be meaningless WITHOUT CRASHING. The native units are declared
+  # here and the factor is applied when building the evaluation tree, so everything
+  # downstream is in mm, as for the other datasets.
   #
-  # `gt_units` est purement DÉCLARATIF pour le pipeline (il ne le lit pas encore) ;
-  # c'est le builder d'arbre qui applique `units_scale_to_mm`. Le jour où le
-  # pipeline gérera lui-même les unités, la clé est déjà là et fait foi.
+  # `gt_units` is purely DECLARATIVE for the pipeline (it does not read it yet);
+  # the tree builder applies `units_scale_to_mm`. When the pipeline handles units
+  # itself, the key is already there.
   gt_units: "m"
   units_scale_to_mm: 1000.0
 
   objects: ["wooden_trex"]
-  normals_priors: []          # ⚠ liste vide, PAS null (le loader plante sinon)
-  methods: []                 # auto-détection par le watcher
+  normals_priors: []          # empty list, NOT null (the loader fails otherwise)
+  methods: []                 # auto-detected by the watcher
   num_views: 100
 
 paths:
@@ -42,7 +40,7 @@ cleanup:
   z_threshold: null   # no absolute height cut for Skoltech3D (kept only for DiLiGenT-MV)
 
 evaluation:
-  # ⚠ EN MILLIMÈTRES (cf. units_scale_to_mm ci-dessus)
+  # In MILLIMETRES (see units_scale_to_mm above)
   downsample_density: 0.07
   max_dist: 5.0
   fscore_thresholds: [0.25, 0.5, 1.0, 2.0, 3.0, 5.0]

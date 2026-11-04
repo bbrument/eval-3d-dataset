@@ -114,14 +114,14 @@ visualization:
 
 # Default to local execution so the config runs anywhere out of the box.
 # For a cluster, set mode: "slurm" and fill the account/partition (see the
-# `slurm:` block, mirrored from config/martine_watcher.yaml).
+# commented `slurm:` block below, with the resources used for the paper).
 execution:
   mode: "local"
   local:
     max_workers: 4
   # slurm:
-  #   account: "m25115"
-  #   partition: "mesonet"
+  #   account: "<your_account>"
+  #   partition: "<your_partition>"
   #   cleanup: { cpus: 16, mem_gb: 256, time: "06:00:00" }
   #   eval:    { cpus: 16, mem_gb: 256, time: "04:00:00" }
   #   viz:     { cpus: 4,  mem_gb: 128, time: "01:00:00" }
