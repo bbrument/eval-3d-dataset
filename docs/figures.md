@@ -1,5 +1,7 @@
 # Paper figures and tables
 
+[← back to README](../README.md)
+
 `eval-pipeline figures` builds the figures and tables of a paper from the eval outputs. A YAML
 specification lists the methods, the configurations that were run and the parameters of each output.
 

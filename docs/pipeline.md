@@ -1,5 +1,8 @@
 # Running the pipeline end to end
 
+The command sequence from a GT mesh and raw reconstructions to `metrics.json` and curves, and the other
+stages.
+
 [← back to README](../README.md)
 
 ```bash

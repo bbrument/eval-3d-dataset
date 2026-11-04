@@ -19,7 +19,7 @@
 # QUICK START
 #   1. Edit the `paths:` block below: <DATA> = your download, <RUNS> = a scratch dir.
 #   2. Drop each reconstruction at  <RUNS>/<object>/<method>/results_raw/mesh.ply
-#   3. See eval/docs (or the dataset's docs/EVALUATION.md) for the command sequence.
+#   3. Run cleanup then evaluate: see the README Quick start and docs/pipeline.md.
 #
 # RESOLUTION: scoring always uses the full-resolution evaluation kit under gt/
 # (masks_eval/ at 9568x6376 with eval_cameras.sfm), whatever tier (d1/d2/d4/d8) the

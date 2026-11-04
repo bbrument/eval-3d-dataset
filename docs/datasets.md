@@ -1,9 +1,11 @@
 # Datasets and bundled configurations
 
+The configs shipped in `config/`, one per dataset, and how to add your own.
+
 [← back to README](../README.md)
 
-The pipeline was built for a millimetre-scale 84-view benchmark (codename *martine*) and
-Skoltech3D (*skoltech3d*), and applies unchanged to any dataset that follows the
+The pipeline was built for Martine, a millimetre-scale 84-view benchmark, and applies unchanged to any
+dataset that follows the
 [input layout](input-layout.md). Everything dataset-specific lives in a config file under
 `config/` — `src/` carries no dataset assumptions.
 

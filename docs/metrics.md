@@ -1,5 +1,7 @@
 # Reading `metrics.json`
 
+What each field of `metrics.json` means, and why an empty result is `NaN` rather than `0`.
+
 [← back to README](../README.md)
 
 Each object×method cell writes one `eval_results/metrics.json`.

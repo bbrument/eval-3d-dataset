@@ -1,5 +1,7 @@
 # Running on a cluster
 
+Running the stages as SLURM jobs from the bundled templates.
+
 [← back to README](../README.md)
 
 Set `execution.mode: "slurm"` and fill `execution.slurm.account` / `partition`. Job templates in
