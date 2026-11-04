@@ -47,6 +47,7 @@ def test_chamfer_ranks_rows_and_reports_means(tmp_path):
     assert "obj2 & -- & \\textbf{0.400} & \\underline{0.500} \\\\" in tex
     assert "\\textit{Mean} & 0.300 & 0.300 & 0.300 \\\\" in tex
     assert "\\textit{Reconstructed} & 1/2 & 2/2 & 2/2 \\\\" in tex
+    assert "\\begin{tabular}{lrrc}" in tex  # a method with a single tier is centred under its name
 
 
 def test_failures_ordered_dense_to_sparse(tmp_path):
