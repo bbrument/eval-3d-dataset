@@ -31,7 +31,8 @@ uv run eval-pipeline -c config/martine.local.yaml cleanup -o rock    # carve to 
 uv run eval-pipeline -c config/martine.local.yaml evaluate -o rock   # Chamfer, coverage, F-score
 ```
 
-QUICKSTART_RESULT
+`runs/rock/my_method/eval_results/metrics.json` then holds the Chamfer distance, `coverage` and the F-score at
+0.5–5 mm ([docs/metrics.md](docs/metrics.md)). `run` chains both stages over every object and method.
 
 ## Install
 
