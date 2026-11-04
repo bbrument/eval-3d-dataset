@@ -27,9 +27,10 @@ try:
     import pyrender
     PYRENDER_AVAILABLE = True
     PYRENDER_IMPORT_ERROR = None
-except ImportError as _e:
-    # Also raised when pyrender is installed but the GL backend library
-    # (e.g. libOSMesa for PYOPENGL_PLATFORM=osmesa) cannot be loaded: keep the reason.
+except Exception as _e:
+    # ImportError when pyrender is missing or its GL backend library (e.g. libOSMesa for
+    # PYOPENGL_PLATFORM=osmesa) cannot be loaded; PyOpenGL without any GL library raises
+    # AttributeError instead. Either way rendering is unavailable: keep the reason.
     PYRENDER_AVAILABLE = False
     PYRENDER_IMPORT_ERROR = f"{type(_e).__name__}: {_e}"
 
