@@ -67,8 +67,8 @@ execution:
 
   # SLURM execution settings
   slurm:
-    account: "m25115"
-    partition: "mesonet"
+    account: "<your_account>"
+    partition: "<your_partition>"
 
     # Cleanup stage resources
     cleanup:

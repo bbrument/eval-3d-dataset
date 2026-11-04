@@ -17,7 +17,6 @@ holds the base defaults and documents every available key.
 | config | dataset |
 |---|---|
 | `config/martine.yaml` | Martine (mm, 84 views) — the benchmark evaluation |
-| `config/martine_watcher.yaml` | Martine watcher: auto-detect methods/objects, cleanup + eval + viz (local mode) |
 | `config/skoltech3d.yaml` | Skoltech3D (`wooden_trex` and following; metre→millimetre units handling — see [the units trap](configuration.md#the-units-trap-sk3d)) |
 | `config/diligentmv.yaml` | DiLiGenT-MV |
 | `config/dtu.yaml` | DTU |

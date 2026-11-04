@@ -41,18 +41,12 @@ slurm_logs/
 .DS_Store
 Thumbs.db
 
-# Project-specific files (not part of the codebase)
-projection_comparison.png
-slurm_fix_visibility.sh
-slurm_preprocess_lucesmv.sh
-docs/
-
 # Watcher state files
 config/.*_state.json
 
 # Local machine-specific config overrides (real paths); published configs use placeholders
-config/*.local.yaml
-config/*.local.sh
+*.local.yaml
+*.local.sh
 
 # Metrics-fix backup snapshots (local only)
 .metrics_fix_backups/

@@ -56,8 +56,8 @@ execution:
   local:
     max_workers: 4
   slurm:
-    account: "m25115"
-    partition: "mesonet"
+    account: "<your_account>"
+    partition: "<your_partition>"
     cleanup:
       cpus: 4
       mem_gb: 32
