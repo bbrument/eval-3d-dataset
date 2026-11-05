@@ -78,3 +78,21 @@ def test_prf_figure_size_from_the_spec(tmp_path):
     tall.mkdir()
     prf.plot(make_spec(prf={**base, "figsize": [10, 5]}), _prf_numbers(), tall)
     assert Image.open(tall / "prf.png").size == (2000, 1000)
+
+
+def test_prf_square_root_x_axis(tmp_path, monkeypatch):
+    """x_scale sqrt: tau = 1 mm at mid-width of a 0-4 mm panel, ticks from the spec; linear by default."""
+    from src.figures import prf
+    figs = []
+    monkeypatch.setattr(prf.plt, "close", figs.append)
+    base = {"methods": ["alpha"], "tier": "d4", "max_threshold": 4.0, "n_thresholds": 3, "output": "prf.pdf"}
+    prf.plot(make_spec(prf=base), _prf_numbers(), tmp_path)
+    assert all(ax.get_xscale() == "linear" for ax in figs[0].axes)
+    prf.plot(make_spec(prf={**base, "x_scale": "sqrt", "x_ticks": [0, 0.25, 0.5, 1, 2, 4]}), _prf_numbers(),
+             tmp_path)
+    for ax in figs[1].axes:
+        x0, x1 = ax.transData.transform([(0, 0), (1, 0)])[:, 0]
+        x4 = ax.transData.transform([(4, 0)])[0, 0]
+        assert abs((x1 - x0) / (x4 - x0) - 0.5) < 1e-6
+        assert list(ax.get_xticks()) == [0, 0.25, 0.5, 1, 2, 4]
+        assert [t.get_text() for t in ax.get_xticklabels()] == ["0", "0.25", "0.5", "1", "2", "4"]

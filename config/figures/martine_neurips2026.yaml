@@ -111,6 +111,9 @@ prf:
   max_threshold: 4.0
   n_thresholds: 201
   report: [0.25, 0.5, 1.0]
+  # square-root tau axis: 0-1 mm takes half of each panel (Lilian, Baptiste 05/11/2026); markers kept (colour-blind)
+  x_scale: sqrt
+  x_ticks: [0, 0.25, 0.5, 1, 2, 4]
   figsize: [10, 3.5]   # taller panels, full text width: the methods' curves stay apart
   rc: {axes.labelsize: 10, axes.titlesize: 10, lines.linewidth: 1.2}
   output: prf_curves.pdf

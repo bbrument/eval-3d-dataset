@@ -54,7 +54,11 @@ def plot(spec: FiguresSpec, numbers: dict, out_dir: Path) -> Path:
         if i > 0:
             ax.set_yticklabels([])
         ax.set_ylim(0, 100)
+        if s.x_scale == "sqrt":
+            ax.set_xscale("function", functions=(lambda x: np.sqrt(np.clip(x, 0, None)), np.square))
         ax.set_xlim(0, s.max_threshold)
+        if s.x_ticks is not None:
+            ax.set_xticks(s.x_ticks, [f"{t:g}" for t in s.x_ticks])
         ax.grid(True, linestyle=":", alpha=0.8)
         ax.set_yticks(np.arange(0, 101, 25))
         ax.tick_params(axis="y", labelsize=7, pad=1)
