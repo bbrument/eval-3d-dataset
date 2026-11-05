@@ -34,7 +34,10 @@ A **cell** is one configuration of a method: `<method>_<tier>` (all views) or
 - A cell listed under `cells.declared` but without `metrics.json` for an object, or whose
   `metrics.json` records an empty reconstruction (`empty_reconstruction`: a mesh with no vertex), is
   a **failure** of the method on that object. It is drawn as a cross, written as `--` in the Chamfer table and listed
-  in the failures table. The object is left out of every pooled score.
+  in the failures table. In every pooled score (PRF, radar, F of the Chamfer table's Mean row) it counts as one
+  more piece of the single pooled mesh with nothing reconstructed: no data point, and its GT points stay in the pool,
+  all missed. It lowers recall and F, not precision; beyond `evaluation.max_dist` its points leave the pooled
+  Chamfer distance unchanged.
 - A cell that is not declared was **not run**. It is written as `--` in the coverage table and not
   drawn, and it is never counted as a failure.
 - The GT points of `challenges/excluded.npy` are removed from every pooled score through

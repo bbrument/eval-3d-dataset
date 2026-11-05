@@ -13,7 +13,7 @@ import numpy as np
 
 from ..config import Config
 from .cells import Cell, Results
-from .pooling import load_distances, pooled_fscore
+from .pooling import load_distances, missed_gt, pooled_fscore
 from .spec import AttributeAxis, FiguresSpec
 from .style import apply_style, method_style
 
@@ -75,7 +75,9 @@ def radar_values(config: Config, spec: FiguresSpec, results: Results,
             pairs = []
             for obj in objects:
                 if not results.ok(obj, cell):
-                    continue  # failure of the method: out of every pool, declared in the failures table
+                    # failure of the method: its GT points stay in the pool, missed (declared in the failures table)
+                    pairs.append(missed_gt(config, obj, select=select(obj)))
+                    continue
                 pairs.append(load_distances(config, obj, spec.cell_dir(cell), select=select(obj)))
                 pooled.setdefault((m, key), []).append(obj)
             values[m][key] = pooled_fscore(pairs, s.threshold)

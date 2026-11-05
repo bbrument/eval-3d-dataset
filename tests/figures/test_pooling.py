@@ -3,7 +3,7 @@
 import numpy as np
 import pytest
 
-from src.figures.pooling import load_distances, pooled_fscore, prf_curves
+from src.figures.pooling import load_distances, missed_gt, pooled_fscore, prf_curves
 
 from .helpers import make_cell, make_config, make_gt
 
@@ -42,3 +42,15 @@ def test_pooled_fscore_concatenates_objects():
     p, r = 1 / 2, 2 / 3
     assert pooled_fscore(pairs, 0.5) == pytest.approx(200 * p * r / (p + r))
     assert pooled_fscore([], 0.5) is None
+
+
+def test_failed_object_brings_its_gt_points_unreached(tmp_path):
+    """A failed object counts in the pool as one mesh would: no data point, every kept GT point missed."""
+    config = make_config(tmp_path)
+    make_gt(config, "obj1", 4, excluded=[False, True, False, False])
+    d2g, g2d = missed_gt(config, "obj1")
+    assert len(d2g) == 0 and len(g2d) == 3 and np.isinf(g2d).all()
+    d2g, g2d = missed_gt(config, "obj1", select=np.array([True, True, True, False]))
+    assert len(g2d) == 2
+    with pytest.raises(ValueError, match="length"):
+        missed_gt(config, "obj1", select=np.ones(3, bool))

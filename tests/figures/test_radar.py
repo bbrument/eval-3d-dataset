@@ -38,17 +38,20 @@ def test_object_without_challenges_is_an_error(tmp_path):
         discover_properties(config, ["obj1", "obj2"], ["lambertian"])
 
 
-def test_values_pool_masked_points_and_skip_failures(tmp_path):
+def test_values_pool_masked_points_and_count_failures_as_missed_gt(tmp_path):
     config = make_config(tmp_path)
     # obj1: 4 GT points, lambertian on the first three, the second one excluded.
     make_gt(config, "obj1", 4, excluded=[0, 1, 0, 0], challenges={"lambertian": [1, 1, 1, 0]},
             attributes={"visibility_count": [0, 2, 3, 5], "curvature_values": [-1, -1, 0, -0.2]})
     make_cell(config, "obj1", "alpha_d4", d2g=[0.1, 0.9, 0.2, 0.1], g2d=[0.1, 0.1, 0.9, 0.1], idx=[0, 1, 2, 3])
-    make_gt(config, "obj2", 2, challenges={"lambertian": [1, 1]})  # alpha failed on obj2: no cell
+    # alpha failed on obj2 (no cell): its GT points stay in the pools, all missed
+    make_gt(config, "obj2", 2, challenges={"lambertian": [1, 1]},
+            attributes={"visibility_count": [0, 9], "curvature_values": [0, 0]})
     spec = make_spec(radar=RADAR)
     values, objects = radar_values(config, spec, Results(config, spec))
-    # lambertian keeps GT 0 and 2: recall 1/2; data points 0 and 2 (nearest GT 0, 2): precision 2/2.
-    assert values["alpha"]["lambertian"] == pytest.approx(100 * 2 * 1 * 0.5 / 1.5)
+    # lambertian keeps GT 0 and 2 of obj1 and both GT of obj2: recall 1/4; data points 0 and 2 (nearest GT 0, 2):
+    # precision 2/2.
+    assert values["alpha"]["lambertian"] == pytest.approx(100 * 2 * 1 * 0.25 / 1.25)
     assert values["alpha"]["specular"] is None
     assert objects[("alpha", "lambertian")] == ["obj1"]
     # low_vis = 1 <= v <= 3 and not excluded: GT 2 only (recall 0); data point 2 (precision 1).

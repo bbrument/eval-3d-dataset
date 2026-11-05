@@ -96,3 +96,17 @@ def test_prf_square_root_x_axis(tmp_path, monkeypatch):
         assert abs((x1 - x0) / (x4 - x0) - 0.5) < 1e-6
         assert list(ax.get_xticks()) == [0, 0.25, 0.5, 1, 2, 4]
         assert [t.get_text() for t in ax.get_xticklabels()] == ["0", "0.25", "0.5", "1", "2", "4"]
+
+
+def test_prf_counts_the_gt_of_failed_objects_as_missed(tmp_path):
+    """alpha reconstructs obj1 only: obj2's 2 GT points are in the pool, unreached (recall 2/4, precision 1)."""
+    from src.figures import prf
+    config = make_config(tmp_path)
+    make_gt(config, "obj1", 2)
+    make_gt(config, "obj2", 2)
+    make_cell(config, "obj1", "alpha_d4", d2g=[0.1], g2d=[0.1, 0.1], idx=[0])
+    spec = make_spec(prf={"methods": ["alpha"], "tier": "d4", "max_threshold": 1.0, "n_thresholds": 3,
+                          "output": "prf.pdf"})
+    r = prf.compute(config, spec, Results(config, spec))["methods"]["alpha"]
+    assert r["recall"] == [0.0, 0.5, 0.5] and r["precision"] == [0.0, 1.0, 1.0]
+    assert (r["n_objects"], r["n_failed"], r["n_gt"]) == (1, 1, 4)

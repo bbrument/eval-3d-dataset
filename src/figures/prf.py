@@ -7,7 +7,7 @@ import numpy as np
 
 from ..config import Config
 from .cells import Cell, Results
-from .pooling import load_distances, prf_curves
+from .pooling import load_distances, missed_gt, prf_curves
 from .spec import FiguresSpec
 from .style import apply_style, method_style
 
@@ -18,16 +18,19 @@ def compute(config: Config, spec: FiguresSpec, results: Results) -> dict:
     out = {"thresholds": thresholds.tolist(), "methods": {}}
     for m in s.methods:
         cell = Cell(m, s.tier)
-        pairs = [load_distances(config, o, spec.cell_dir(cell)) for o in results.objects if results.ok(o, cell)]
-        if not pairs:
+        done = [o for o in results.objects if results.ok(o, cell)]
+        if not done:
             print(f"  {spec.methods[m].display:20s}  -- no reconstruction, skipped")
             continue
+        # a failed object stays in the pool: its GT points are missed (see pooling)
+        pairs = [load_distances(config, o, spec.cell_dir(cell)) if o in done else missed_gt(config, o)
+                 for o in results.objects]
         data2gt = np.concatenate([d.ravel() for d, _ in pairs])
         gt2data = np.concatenate([g.ravel() for _, g in pairs])
         p, r, f = prf_curves(data2gt, gt2data, thresholds)
-        out["methods"][m] = {"n_objects": len(pairs), "n_data": len(data2gt), "n_gt": len(gt2data),
+        out["methods"][m] = {"n_objects": len(done), "n_failed": len(pairs) - len(done), "n_data": len(data2gt), "n_gt": len(gt2data),
                              "precision": p.tolist(), "recall": r.tolist(), "fscore": f.tolist()}
-        print(f"  {spec.methods[m].display:20s}  objects={len(pairs):2d}/{len(results.objects)}  "
+        print(f"  {spec.methods[m].display:20s}  objects={len(done):2d}/{len(results.objects)}  "
               f"data_pts={len(data2gt):>10,}  gt_pts={len(gt2data):>10,}")
     for tau in s.report:
         i = int(np.argmin(np.abs(thresholds - tau)))

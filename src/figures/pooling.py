@@ -1,7 +1,8 @@
 """Precision / recall / F-score pooled over objects, from the distances saved by `evaluate`.
 
 Pooling concatenates the point-level distances of every object before counting, so an object weighs by its
-number of points. Counts are exact and the ratios are float64 (core.metrics.compute_fscore_curve is float32 and
+number of points, as if all objects were one mesh. A failed object (no reconstruction) brings no data point and its
+GT points stay in the pool, unreached: it lowers recall and F, not precision. Counts are exact and the ratios are float64 (core.metrics.compute_fscore_curve is float32 and
 per object). A point counts when its distance is strictly below the threshold, as in core.metrics.
 """
 
@@ -41,6 +42,23 @@ def load_distances(config: Config, obj: str, cell_dir: str, select: Optional[np.
         drop = ~np.asarray(select, bool)
         exclude = drop if exclude is None else (exclude | drop)
     return apply_exclude(data2gt, gt2data, idx, exclude)
+
+
+def missed_gt(config: Config, obj: str, select: Optional[np.ndarray] = None):
+    """(data2gt, gt2data) of a failed object: no data point, every kept GT point at an infinite distance.
+
+    Same GT points as `load_distances` (`excluded` removed, optionally restricted to `select`).
+    """
+    gt_dir = config.get_gt_artifacts_dir(obj)
+    n_gt = len(np.load(gt_dir / "gt_pcd.npy", mmap_mode="r"))
+    exclude, _ = load_gt_exclude(gt_dir, n_gt, verbose=False)
+    keep = np.ones(n_gt, bool) if exclude is None else ~exclude
+    if select is not None:
+        if len(select) != n_gt:
+            raise ValueError(f"{obj}: selection mask has length {len(select)} but the GT has {n_gt} points. "
+                             "Stale mask or stale GT — refusing to guess.")
+        keep &= np.asarray(select, bool)
+    return np.empty(0), np.full(int(keep.sum()), np.inf)
 
 
 def pooled_fscore(pairs: list, threshold: float) -> Optional[float]:
