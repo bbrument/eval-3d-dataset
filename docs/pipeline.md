@@ -18,7 +18,7 @@ eval-pipeline -c $CFG preprocess-gt --clean-gt
 #    Reads results_raw/mesh.ply, writes results_cleaned/mesh.ply.
 eval-pipeline -c $CFG cleanup
 
-# 3. Distances, Chamfer, coverage, F-score at the reporting thresholds.
+# 3. Distances, Chamfer, F-score at the reporting thresholds.
 #    Writes eval_results/metrics.json and eval_results/distances/.
 eval-pipeline -c $CFG evaluate
 

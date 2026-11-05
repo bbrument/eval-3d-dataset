@@ -9,8 +9,7 @@
 [![tests](https://github.com/martine-benchmark/eval-3d/actions/workflows/tests.yml/badge.svg)](https://github.com/martine-benchmark/eval-3d/actions/workflows/tests.yml)
 
 **eval-3d** scores reconstructed meshes against a ground-truth mesh: Chamfer distance, precision / recall /
-F-score at fixed thresholds, dense PR curves, and a `coverage` value that says how much of each cloud the numbers
-were computed on. It was built for the [Martine](https://martine-benchmark.github.io/) benchmark and runs unchanged
+F-score at fixed thresholds, dense PR curves, and the same scores per surface property. It was built for the [Martine](https://martine-benchmark.github.io/) benchmark and runs unchanged
 on any dataset that follows the [input layout](docs/input-layout.md); configs for DiLiGenT-MV, LUCES-MV,
 Skoltech3D, DTU and EvalMVX ship in `config/`.
 
@@ -28,11 +27,11 @@ mkdir -p runs/rock/my_method/results_raw && cp data/rock/gt/gt.ply runs/rock/my_
 sed "s|/path/to/martine_dataset|$PWD/data|; s|/path/to/workspace/runs|$PWD/runs|; s|\"methodA\"|\"my_method\"|" \
     config/martine.yaml > config/martine.local.yaml
 uv run eval-pipeline -c config/martine.local.yaml cleanup -o rock    # carve to the silhouettes
-uv run eval-pipeline -c config/martine.local.yaml evaluate -o rock   # Chamfer, coverage, F-score
+uv run eval-pipeline -c config/martine.local.yaml evaluate -o rock   # Chamfer, F-score
 ```
 
-`runs/rock/my_method/eval_results/metrics.json` then holds the Chamfer distance, `coverage` and the F-score at
-0.5 to 5 mm ([docs/metrics.md](docs/metrics.md)).
+`runs/rock/my_method/eval_results/metrics.json` then holds the Chamfer distance and the F-score at 0.5 to
+5 mm ([docs/metrics.md](docs/metrics.md)).
 
 ## Install
 
@@ -55,7 +54,7 @@ Every command takes `-c/--config` (required) and most take `-o/--object`, `-m/--
 | :-- | :-- |
 | `preprocess-gt` | Clean the GT mesh, sample its point cloud, compute per-point attributes (not needed for Martine: `gt/` ships them) |
 | `cleanup` | Carve reconstructed vertices that project outside every silhouette |
-| `evaluate` | Distances, Chamfer, coverage, F-score → `eval_results/metrics.json` |
+| `evaluate` | Distances, Chamfer, F-score → `eval_results/metrics.json` |
 | `curves` | Dense precision / recall / F-score curves from the saved distances |
 | `recompute` | Rebuild `metrics.json` and curves from saved distances (new `max_dist`, new mask) |
 | `run` | `cleanup` + `evaluate` over all objects and methods, locally or on SLURM (`--slurm`) |
@@ -81,8 +80,7 @@ Every command takes `-c/--config` (required) and most take `-o/--object`, `-m/--
 | [docs/cluster.md](docs/cluster.md) | Running on SLURM |
 | [docs/figures.md](docs/figures.md) | Paper figures and tables; the Martine specification as an example |
 
-Read `coverage` before the Chamfer distance: a low Chamfer on 20 % coverage describes a fragment, not a
-reconstruction. Normal accuracy is not part of the metrics.
+Normal accuracy is not part of the metrics.
 
 ## Tests
 

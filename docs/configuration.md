@@ -23,7 +23,7 @@ Every command takes `-c/--config`; it is required.
 |---|---|---|
 | `evaluation.downsample_density` | mesh units | Resampling step for **both** clouds, so a denser mesh cannot buy a better score. Smaller = more points, slower, more memory. |
 | `evaluation.sampling_seed` | integer | Seed for the GT down-sampling shuffle, so `gt_pcd.npy` is reproducible across runs. Default `42`. |
-| `evaluation.max_dist` | mesh units | Distances above this are dropped from the Chamfer average, bounding gross outliers. **Its cost is reported as `coverage`**: if coverage is low, `max_dist` is doing too much work and the Chamfer is not meaningful. |
+| `evaluation.max_dist` | mesh units | Distances above this are dropped from the Chamfer average, bounding gross outliers. Its cost shows in the `coverage` diagnostic ([metrics.md](metrics.md#diagnostic-fields)): if it is low, `max_dist` is doing too much work and the Chamfer is not meaningful. |
 | `evaluation.fscore_thresholds` | mesh units | The reporting grid. `precision`/`recall`/`fscore` are index-aligned with `thresholds`. |
 | `evaluation.curvature_radius` | mesh units | Curvature of `attributes/curvature_values.npy` (Voronoi Covariance Measure): radius r of the connected ball, so the far side of a thin wall is not mixed in. Default `1.0` (`null` = `1.0`). Convex < 0. |
 | `evaluation.curvature_tube` | mesh units | VCM tube thickness R. Default `0.5`. |
