@@ -1,0 +1,40 @@
+# Example config: scores the bundled lego fixture (tests/data/lego) in under two minutes.
+# Paths are relative: run from the repository root. Outputs go to runs/lego/pgsr_d4/.
+#
+#   mkdir -p runs/lego/pgsr_d4/results_raw
+#   cp tests/data/lego/pgsr_d4.ply runs/lego/pgsr_d4/results_raw/mesh.ply
+#   uv run eval-pipeline -c config/example.yaml run
+#
+# The fixture is a reduced Martine kit (12 views, masks at 1/8 resolution, GT cloud at
+# 0.5 mm): the numbers are close to, not equal to, the full evaluation. For the real
+# dataset, start from config/martine.yaml.
+
+dataset:
+  name: "martine-example"
+  objects: ["lego"]
+  methods: ["pgsr_d4"]
+
+paths:
+  data_root: "tests/data/{object}"
+  gt_root: "tests/data/{object}/gt"
+  gt_artifacts_root: "tests/data/{object}/gt"
+  eval_cameras: "tests/data/{object}/gt/eval_cameras.sfm"
+  eval_masks: "tests/data/{object}/gt/masks_eval"
+  watertight_masks: "tests/data/{object}/gt/masks_watertight"
+  eval_root: "runs/{object}"
+
+cleanup:
+  dilation_radius: auto
+  dilation_ref_px: 48
+  dilation_ref_n_pixels: 61005568   # 9568 * 6376, the full-resolution masks
+  use_masks: true
+
+evaluation:
+  downsample_density: 0.5           # mm; config/martine.yaml uses 0.05
+  max_dist: 4.0
+  fscore_thresholds: [0.5, 1.0, 1.5, 2.0, 5.0]
+
+execution:
+  mode: "local"
+  local:
+    max_workers: 2
