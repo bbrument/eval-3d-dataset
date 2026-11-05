@@ -51,6 +51,8 @@ class PRFSpec(BaseModel):
     report: list[float] = Field(default_factory=lambda: [0.25, 0.5, 1.0], description="Thresholds printed")
     figsize: tuple[float, float] = Field((10, 2.2), description="Figure size (inches): three panels side by side")
     rc: dict = Field(default_factory=dict)
+    x_scale: Literal["linear", "sqrt"] = Field("linear", description="sqrt: 0-1 mm takes half of a 0-4 mm panel")
+    x_ticks: Optional[list[float]] = Field(None, description="Threshold ticks (mm); default: matplotlib's")
     output: str
 
 
