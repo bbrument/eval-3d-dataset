@@ -109,3 +109,20 @@ def test_chamfer_sideways(tmp_path):
     tex = chamfer_table(spec, res)
     assert tex.startswith("\\begin{sidewaystable}") and tex.endswith("\\end{sidewaystable}\n")
     assert "\\resizebox{\\textheight}{!}{%" in tex
+
+
+def test_failed_object_lowers_pooled_f_not_cd(tmp_path):
+    """beta failed on obj2: CD pooled over obj1 only (0.1 and 0.5 -> 0.300); F with obj2's 4 GT points missed:
+    P = 1, R = 2/8 -> 40.0 (66.7 if obj2 were left out of the pool)."""
+    config = make_config(tmp_path)
+    for obj in ("obj1", "obj2"):
+        make_gt(config, obj, 4)
+    for obj, cell, cd, f, d2g, g2d in CELLS:
+        if (obj, cell) != ("obj2", "beta_d4"):
+            make_cell(config, obj, cell, d2g=d2g, g2d=g2d, idx=[0] * len(d2g), chamfer=cd, fscore=(f, 0.9))
+    tables = {**TABLES["tables"], "chamfer": {**TABLES["tables"]["chamfer"], "method_tiers": {"alpha": ["d4"]},
+                                              "fscore": 0.5, "mean": "pooled"}}
+    spec = make_spec(object_labels=TABLES["object_labels"], tables=tables)
+    tex = chamfer_table(spec, Results(config, spec))
+    assert "\\textit{Mean} & 0.550 / 35.7 & 0.300 / 40.0 \\\\" in tex
+    assert "\\textit{Reconstructed} & 2/2 & 1/2 \\\\" in tex

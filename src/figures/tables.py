@@ -6,7 +6,7 @@ import numpy as np
 
 from ..core.metrics import compute_chamfer
 from .cells import Cell, Results
-from .pooling import load_distances, pooled_fscore
+from .pooling import load_distances, missed_gt, pooled_fscore
 from .spec import ChamferTable, FiguresSpec
 
 
@@ -74,10 +74,12 @@ def _mean(vals: list) -> Optional[float]:
 
 
 def _pooled(spec: FiguresSpec, results: Results, cell: Cell, fscore: Optional[float]):
-    """(CD, F %) of the point distances of every reconstructed object concatenated, as if they were one mesh."""
-    pairs = [load_distances(results.config, o, spec.cell_dir(cell)) for o in results.objects if results.ok(o, cell)]
-    if not pairs:
+    """(CD, F %) of the point distances of every object concatenated, as if they were one mesh. A failed object adds
+    its GT points, unreached: missed in F, and beyond max_dist they leave CD (Eq. chamfer) unchanged."""
+    if not results.n_ok(cell):
         return None, None
+    pairs = [load_distances(results.config, o, spec.cell_dir(cell)) if results.ok(o, cell)
+             else missed_gt(results.config, o) for o in results.objects]
     d2g = np.concatenate([d.ravel() for d, _ in pairs])
     g2d = np.concatenate([g.ravel() for _, g in pairs])
     cd = compute_chamfer(d2g, g2d, max_dist=results.config.evaluation.max_dist)["chamfer"]
