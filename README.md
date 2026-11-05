@@ -16,8 +16,9 @@ Skoltech3D, DTU and EvalMVX ship in `config/`.
 
 ## Quick start
 
-Score one Martine object. Here the "reconstruction" is the ground truth itself, a sanity check that should give an
-F-score of 1; put your own mesh (in the dataset frame, millimetres) in its place.
+The following code shows you how to score one Martine object. It currently runs a sanity check using the ground
+truth as input (expected F-score = 1). Simply replace it with your own mesh, scaled in millimetres and in the dataset
+frame, to evaluate your method.
 
 ```bash
 git clone https://github.com/martine-benchmark/eval-3d.git && cd eval-3d && uv sync
@@ -31,8 +32,7 @@ uv run eval-pipeline -c config/martine.local.yaml evaluate -o rock   # Chamfer, 
 ```
 
 `runs/rock/my_method/eval_results/metrics.json` then holds the Chamfer distance, `coverage` and the F-score at
-0.5 to 5 mm ([docs/metrics.md](docs/metrics.md)); here `"chamfer": 0.011`, `"coverage": 1.0` and every `fscore` at
-1.0. `run` chains both stages over every object and method.
+0.5 to 5 mm ([docs/metrics.md](docs/metrics.md)).
 
 ## Install
 
@@ -92,14 +92,6 @@ uv run pytest
 
 Tests that render with OpenGL are marked `gl` and skipped when no backend is available; the paper regression tests
 run only when `EVAL_FIGURES_REF` points to the paper's evaluation outputs.
-
-## Related projects
-
-| Repository | Role |
-| :-- | :-- |
-| [martine-dataset](https://github.com/martine-benchmark/martine-dataset) | Martine data: download, file format, converters to method inputs |
-| [contour-registration](https://github.com/martine-benchmark/contour-registration) | Mesh-to-image alignment by multi-view contour ICP |
-| [martine-build](https://github.com/martine-benchmark/martine-build) | Dataset construction pipeline (work in progress) |
 
 ## License
 
