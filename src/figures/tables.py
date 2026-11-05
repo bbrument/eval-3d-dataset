@@ -114,7 +114,8 @@ def chamfer_table(spec: FiguresSpec, results: Results, table: Optional[ChamferTa
         "\\toprule",
         head,
         " ".join(rules),
-        "Object & " + " & ".join(c.tier for c in cols) + " \\\\",
+        # tier headers centred over their (right-aligned) values
+        "Object & " + " & ".join(f"\\multicolumn{{1}}{{c}}{{{c.tier}}}" for c in cols) + " \\\\",
         "\\midrule",
     ]
     objs = results.objects

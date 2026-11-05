@@ -13,33 +13,34 @@ objects: [01_rock, 02_vase, 03_hammer_head, 04_candle, 06_can, 07_glass, 08_boul
           28_spine]
 
 # Object names in the tables (LaTeX): the published names.
+# Object names as \obj{...}: the paper decides their rendering (main.tex, small capitals on trial, 05/11/2026)
 object_labels:
-  01_rock: rock
-  02_vase: vase
-  03_hammer_head: 'hammer\_head'
-  04_candle: candle
-  06_can: can
-  07_glass: glass
-  08_boule: 'petanque\_ball'
-  09_jam_pot: 'jam\_pot'
-  10_colander: colander
-  11_ecorce: wood
-  12_assiette: plate
-  13_paw_pad: 'paw\_pad'
-  14_moka: 'moka\_pot'
-  15_lego: lego
-  16_surgery_scissors: 'surgery\_scissors'
-  17_knife: knife
-  18_spikes_ball: 'spikes\_ball'
-  19_straw_bob: 'straw\_hat'
-  21_sneakers: sneakers
-  22_surgery_drill: 'surgery\_saw'
-  23_whisk: whisk
-  24_warrior_head: 'warrior\_head'
-  25_plant: plant
-  26_grid: grid
-  27_bowl: bowl
-  28_spine: spine
+  01_rock: '\obj{rock}'
+  02_vase: '\obj{vase}'
+  03_hammer_head: '\obj{hammer head}'
+  04_candle: '\obj{candle}'
+  06_can: '\obj{can}'
+  07_glass: '\obj{glass}'
+  08_boule: '\obj{petanque ball}'
+  09_jam_pot: '\obj{jam pot}'
+  10_colander: '\obj{colander}'
+  11_ecorce: '\obj{wood}'
+  12_assiette: '\obj{plate}'
+  13_paw_pad: '\obj{paw pad}'
+  14_moka: '\obj{moka pot}'
+  15_lego: '\obj{lego}'
+  16_surgery_scissors: '\obj{surgery scissors}'
+  17_knife: '\obj{knife}'
+  18_spikes_ball: '\obj{spikes ball}'
+  19_straw_bob: '\obj{straw hat}'
+  21_sneakers: '\obj{sneakers}'
+  22_surgery_drill: '\obj{surgery saw}'
+  23_whisk: '\obj{whisk}'
+  24_warrior_head: '\obj{warrior head}'
+  25_plant: '\obj{plant}'
+  26_grid: '\obj{grid}'
+  27_bowl: '\obj{bowl}'
+  28_spine: '\obj{spine}'
 
 # Legend order. One hue per family: the first member solid with a filled marker, the second dashed with a hollow
 # marker; RealityScan represents the photogrammetry family. The tables list their methods in their own order.
