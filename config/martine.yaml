@@ -1,4 +1,4 @@
-# Martine — evaluation config for the PUBLISHED dataset layout.
+# Martine: evaluation config for the PUBLISHED dataset layout.
 #
 # Runs the eval pipeline directly on the released Martine dataset, without any
 # copying, symlinking or path rewriting, keeping a strict split between the
@@ -16,10 +16,12 @@
 # Nothing is ever written under <DATA>. The exact published GT point cloud,
 # attributes and challenge masks are consumed directly from the read-only kit.
 #
-# QUICK START
-#   1. Edit the `paths:` block below: <DATA> = your download, <RUNS> = a scratch dir.
+# GETTING STARTED
+#   1. cp config/martine.yaml config/martine.local.yaml, then set dataset_root (and
+#      eval_root if your workspace is not ./runs) in the `paths:` block below.
 #   2. Drop each reconstruction at  <RUNS>/<object>/<method>/results_raw/mesh.ply
-#   3. Run cleanup then evaluate: see the README Quick start and docs/pipeline.md.
+#   3. uv run eval-pipeline -c config/martine.local.yaml run -o <object> -m <method>
+#      (README "Getting started", docs/pipeline.md).
 #
 # RESOLUTION: scoring always uses the full-resolution evaluation kit under gt/
 # (masks_eval/ at 9568x6376 with eval_cameras.sfm), whatever tier (d1/d2/d4/d8) the
@@ -56,26 +58,28 @@ dataset:
     - "warrior_head"
     - "whisk"
     - "wood"
-  # List the method folder name(s) you placed under each object, e.g. "colmap",
-  # "neus2". Leave empty and use the watcher/auto-scan if you prefer discovery.
-  methods:
-    - "methodA"
+  # Method folder names under each object, e.g. "colmap", "neus2". Empty: give one with
+  # `run -m <method>`; `aggregate` then uses every method evaluated on disk.
+  methods: []
   num_views: 84
 
 paths:
-  # ----- EDIT THESE: <DATA> = downloaded dataset (read-only), <RUNS> = workspace -----
-  # data_root is retained for reconstruction-side compatibility. Evaluation uses
-  # only the explicit inputs under gt/ below (masks_watertight/ ships with the
-  # objects whose GT has holes, e.g. sneakers and wood; elsewhere it is skipped).
-  # eval_root : workspace — your results_raw/ meshes and all eval outputs.
-  #             MUST be separate from <DATA>.                                    [write]
-  data_root: "/path/to/martine_dataset/{object}/mvs/d1"
-  gt_root: "/path/to/martine_dataset/{object}/gt"
-  gt_artifacts_root: "/path/to/martine_dataset/{object}/gt"
-  eval_cameras: "/path/to/martine_dataset/{object}/gt/eval_cameras.sfm"
-  eval_masks: "/path/to/martine_dataset/{object}/gt/masks_eval"
-  watertight_masks: "/path/to/martine_dataset/{object}/gt/masks_watertight"
-  eval_root: "/path/to/workspace/runs/{object}"
+  # ----- EDIT THESE TWO -----
+  # dataset_root: the downloaded dataset (read-only), one folder per object.
+  # eval_root:    the workspace with your <object>/<method>/results_raw/mesh.ply and all
+  #               eval outputs; MUST be separate from dataset_root. Relative paths are
+  #               resolved from the directory you run eval-pipeline in.
+  dataset_root: "/path/to/martine_dataset"
+  eval_root: "runs/{object}"
+  # The rest follows the published layout. data_root is kept for reconstruction-side
+  # compatibility; evaluation uses only the inputs under gt/ (masks_watertight/ ships
+  # with the objects whose GT has holes, e.g. sneakers and wood; elsewhere it is skipped).
+  data_root: "{dataset_root}/{object}/mvs/d1"
+  gt_root: "{dataset_root}/{object}/gt"
+  gt_artifacts_root: "{dataset_root}/{object}/gt"
+  eval_cameras: "{dataset_root}/{object}/gt/eval_cameras.sfm"
+  eval_masks: "{dataset_root}/{object}/gt/masks_eval"
+  watertight_masks: "{dataset_root}/{object}/gt/masks_watertight"
 
 cleanup:
   # Carve reconstructed vertices that project outside every (dilated) silhouette.
