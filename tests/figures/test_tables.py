@@ -41,7 +41,8 @@ def test_coverage_counts_and_not_run(tmp_path):
 def test_chamfer_ranks_rows_and_reports_means(tmp_path):
     spec, res = _results(tmp_path)
     tex = chamfer_table(spec, res)
-    assert "Object & d2 & d4 & d4 \\\\" in tex  # alpha d2, alpha d4, beta d4 (d1 never run: no column)
+    # tier headers centred over right-aligned values; alpha d2, alpha d4, beta d4 (d1 never run: no column)
+    assert "Object & \\multicolumn{1}{c}{d2} & \\multicolumn{1}{c}{d4} & \\multicolumn{1}{c}{d4} \\\\" in tex
     assert "first\\_obj & \\underline{0.300} & 0.200 & \\textbf{0.100} \\\\" not in tex
     assert "first\\_obj & 0.300 & \\underline{0.200} & \\textbf{0.100} \\\\" in tex
     assert "obj2 & -- & \\textbf{0.400} & \\underline{0.500} \\\\" in tex
@@ -82,7 +83,7 @@ def _cd_f_results(tmp_path, **chamfer):
 def test_chamfer_and_fscore_in_each_cell(tmp_path):
     spec, res = _cd_f_results(tmp_path)
     tex = chamfer_table(spec, res)
-    assert "Object & d4 & d4 \\\\" in tex  # alpha restricted to d4: its d2 column is gone
+    assert "Object & \\multicolumn{1}{c}{d4} & \\multicolumn{1}{c}{d4} \\\\" in tex  # alpha restricted to d4: its d2 column is gone
     # each metric ranked on its own: lowest CD, highest F
     assert "first\\_obj & \\underline{0.200} / \\textbf{70.0} & \\textbf{0.100} / \\underline{60.0} \\\\" in tex
     assert "obj2 & \\textbf{0.400} / \\underline{50.0} & \\underline{0.500} / \\textbf{80.0} \\\\" in tex
