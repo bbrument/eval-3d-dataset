@@ -19,14 +19,13 @@ def test_martine_example_spec_loads():
     assert list(spec.methods)[:2] == ["realityscan", "meshroom"]
     paper_order = ["meshroom", "realityscan", "colmap", "pgsr", "neus2", "neuralangelo", "rnbneus2", "supernormal"]
     assert spec.tables.failures.methods == paper_order
-    # two versions of the Chamfer table (Baptiste, 27/10/2026): stacked CD / F blocks, and 'CD / F' cells sideways;
-    # both in the PRF legend order, Meshroom at d4 only, Mean row pooled over the objects' points
-    stacked, cell = spec.tables.chamfer_tables
-    assert (stacked.layout, stacked.sideways, cell.layout, cell.sideways) == ("stacked", False, "cell", True)
-    assert stacked.label == "tab:chamfer" and cell.label == "tab:chamfer_cell"
-    for t in (stacked, cell):
-        assert t.methods == spec.prf.methods and t.method_tiers == {"meshroom": ["d4"]}
-        assert (t.fscore, t.mean) == (0.5, "pooled")
+    # one Chamfer table (Baptiste, 06/11/2026): 'CD / F' cells in two stacked sub-tables, upright, in the PRF legend
+    # order, Meshroom at d4 only, Mean row pooled over the objects' points
+    (t,) = spec.tables.chamfer_tables
+    assert (t.layout, t.sideways, t.label, t.output) == ("cell", False, "tab:chamfer", "all_cd.tex")
+    assert t.split == [["realityscan", "meshroom", "colmap", "pgsr"], ["neus2", "neuralangelo", "rnbneus2", "supernormal"]]
+    assert t.methods == spec.prf.methods and t.method_tiers == {"meshroom": ["d4"]}
+    assert (t.fscore, t.mean) == (0.5, "pooled")
     assert spec.radar.threshold == 0.5 and spec.prf.n_thresholds == 201
     # Neuralangelo next to NeuS2 on the radar (Baptiste, 04/11/2026), in the PRF legend order and style
     assert spec.radar.methods == ["realityscan", "colmap", "pgsr", "neus2", "neuralangelo", "rnbneus2"]

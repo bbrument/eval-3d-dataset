@@ -86,39 +86,54 @@ def _pooled(spec: FiguresSpec, results: Results, cell: Cell, fscore: Optional[fl
     return float(cd), None if fscore is None else pooled_fscore(pairs, fscore)
 
 
-def chamfer_table(spec: FiguresSpec, results: Results, table: Optional[ChamferTable] = None) -> str:
-    """Chamfer distance per object (rows) and method x resolution tier with all views (columns that were run), and
-    optionally the F-score at one threshold: 'CD / F' in each cell, or a CD block above an F block. Mean row: mean
-    over the reconstructed objects, or their point distances pooled (CD of Eq. chamfer and F of the pooled points)."""
-    s = table or spec.tables.chamfer
-    env = "sidewaystable" if s.sideways else "table"
-    cols = [Cell(m, t) for m in s.methods for t in s.method_tiers.get(m, s.tiers) if spec.is_declared(Cell(m, t))]
+def _groups(cols: list[Cell]) -> list[tuple[str, list[str]]]:
     groups = []
     for c in cols:
         if groups and groups[-1][0] == c.method:
             groups[-1][1].append(c.tier)
         else:
             groups.append((c.method, [c.tier]))
+    return groups
+
+
+def _align(cols: list[Cell]) -> list[str]:
+    """Right-aligned values, but a method run at a single tier is centred under its name (right-aligned it reads as
+    a half-empty pair)."""
+    return [("r" if len(ts) > 1 else "c") for _, ts in _groups(cols) for _ in ts]
+
+
+def _header(spec: FiguresSpec, cols: list[Cell]) -> list[str]:
+    groups = _groups(cols)
     head = "  & " + " & ".join(f"\\multicolumn{{{len(ts)}}}{{c}}{{{spec.methods[m].display}}}"
                                for m, ts in groups) + " \\\\"
     rules, k = [], 2
     for _, ts in groups:
         rules.append(f"\\cmidrule(lr){{{k}-{k + len(ts) - 1}}}")
         k += len(ts)
+    # tier headers centred over their (right-aligned) values
+    return [head, " ".join(rules),
+            "Object & " + " & ".join(f"\\multicolumn{{1}}{{c}}{{{c.tier}}}" for c in cols) + " \\\\"]
+
+
+def chamfer_table(spec: FiguresSpec, results: Results, table: Optional[ChamferTable] = None) -> str:
+    """Chamfer distance per object (rows) and method x resolution tier with all views (columns that were run), and
+    optionally the F-score at one threshold: 'CD / F' in each cell, or a CD block above an F block. Mean row: mean
+    over the reconstructed objects, or their point distances pooled (CD of Eq. chamfer and F of the pooled points).
+    With `split`, the methods are cut into sub-tables stacked in one tabular (one scale), ranks over the whole row."""
+    s = table or spec.tables.chamfer
+    env = "sidewaystable" if s.sideways else "table"
+    cols = [Cell(m, t) for m in s.methods for t in s.method_tiers.get(m, s.tiers) if spec.is_declared(Cell(m, t))]
+    parts = [[i for i, c in enumerate(cols) if c.method in block] for block in (s.split or [s.methods])]
+    widest = max(parts, key=len)
+    colspec = _align([cols[i] for i in widest])
     lines = [
         f"\\begin{{{env}}}" + ("" if s.sideways else "[htbp]"),
         "\\centering",
         "\\footnotesize",
         f"\\caption{{{s.caption}}}",
         f"\\resizebox{{\\text{'height' if s.sideways else 'width'}}}{{!}}{{%",
-        # a method run at a single tier is centred under its name (right-aligned it reads as a half-empty pair)
-        "\\begin{tabular}{l" + "".join(("r" if len(ts) > 1 else "c") * len(ts) for _, ts in groups) + "}",
+        "\\begin{tabular}{l" + "".join(colspec) + "}",
         "\\toprule",
-        head,
-        " ".join(rules),
-        # tier headers centred over their (right-aligned) values
-        "Object & " + " & ".join(f"\\multicolumn{{1}}{{c}}{{{c.tier}}}" for c in cols) + " \\\\",
-        "\\midrule",
     ]
     objs = results.objects
     cd = {o: [results.chamfer(o, c) for c in cols] for o in objs}
@@ -141,10 +156,22 @@ def chamfer_table(spec: FiguresSpec, results: Results, table: Optional[ChamferTa
         return [" / ".join(c) if any(x != "--" for x in c) else "--" for c in zip(*per)]
 
     if s.fscore is None or s.layout == "cell":
-        lines += [_row(spec.object_label(o), ranked([b[0][o] for b in blocks])) for o in objs]
-        lines += ["\\midrule", _row("\\textit{Mean}", ranked([b[1] for b in blocks], rank=False)),
-                  _row("\\textit{Reconstructed}", counts)]
+        rows = {o: ranked([b[0][o] for b in blocks]) for o in objs}
+        mean = ranked([b[1] for b in blocks], rank=False)
+        for n, part in enumerate(parts):
+            want = _align([cols[i] for i in part])
+
+            def fit(cells, part=part, want=want):
+                """The part's cells, re-aligned where its alignment differs from the tabular's columns."""
+                return [c if a == colspec[j] else f"\\multicolumn{{1}}{{{a}}}{{{c}}}"
+                        for j, (c, a) in enumerate(zip((cells[i] for i in part), want))]
+
+            lines += ([] if n == 0 else ["\\midrule[\\heavyrulewidth]"]) + _header(spec, [cols[i] for i in part])
+            lines += ["\\midrule"] + [_row(spec.object_label(o), fit(rows[o])) for o in objs]
+            lines += ["\\midrule", _row("\\textit{Mean}", fit(mean)),
+                      _row("\\textit{Reconstructed}", fit(counts))]
     else:
+        lines += _header(spec, cols) + ["\\midrule"]
         n = len(cols) + 1
         titles = ["Chamfer distance (mm) $\\downarrow$", f"F-score at {s.fscore:g}~mm (\\%) $\\uparrow$"]
         for i, ((vals, mean, fmt, lowest), title) in enumerate(zip(blocks, titles)):
