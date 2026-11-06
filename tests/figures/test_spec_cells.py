@@ -26,6 +26,7 @@ def test_martine_example_spec_loads():
     assert t.split == [["realityscan", "meshroom", "colmap", "pgsr"], ["neus2", "neuralangelo", "rnbneus2", "supernormal"]]
     assert t.methods == spec.prf.methods and t.method_tiers == {"meshroom": ["d4"]}
     assert (t.fscore, t.mean) == (0.5, "pooled")
+    assert t.centred == ["meshroom"]  # Overleaf (06/11): Neuralangelo and SuperNormal right-aligned
     assert spec.radar.threshold == 0.5 and spec.prf.n_thresholds == 201
     # Neuralangelo next to NeuS2 on the radar (Baptiste, 04/11/2026), in the PRF legend order and style
     assert spec.radar.methods == ["realityscan", "colmap", "pgsr", "neus2", "neuralangelo", "rnbneus2"]
