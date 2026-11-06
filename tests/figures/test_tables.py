@@ -130,31 +130,38 @@ def test_failed_object_lowers_pooled_f_not_cd(tmp_path):
 
 
 def test_chamfer_cells_split_in_stacked_subtables(tmp_path):
-    """'CD / F' cells, methods split into sub-tables one under the other (one tabular, one scale); bold and underline
-    ranked over the whole row, before the split (Baptiste, 06/11/2026)."""
+    """'CD / F' cells, methods split into sub-tables one under the other: one tabular each, inside an invisible
+    tabular so that one \\resizebox gives them one scale (Overleaf layout of Robin and Baptiste, 06/11/2026); bold
+    and underline ranked over the whole row, before the split."""
     spec, res = _cd_f_results(tmp_path, split=[["alpha"], ["beta"]])
     tex = chamfer_table(spec, res)
     lines = tex.splitlines()
-    assert tex.count("\\begin{tabular}") == 1 and "\\begin{tabular}{lc}" in tex
-    a, b = lines.index("  & \\multicolumn{1}{c}{Alpha} \\\\"), lines.index("  & \\multicolumn{1}{c}{Beta} \\\\")
-    assert a < b and lines.count("Object & \\multicolumn{1}{c}{d4} \\\\") == 2
+    outer, sep = lines.index("\\begin{tabular}{@{}c@{}}"), lines.index("\\noalign{\\vspace{0.4cm}}")
+    assert lines.count("\\begin{tabular}{lc}") == 2 and lines.count("\\toprule") == 2
+    assert lines.count("\\bottomrule") == 2 and lines.count("\\end{tabular} \\\\") == 1
+    assert lines[-5:] == ["\\end{tabular}", "\\end{tabular}%", "}", "\\label{tab:chamfer}", "\\end{table}"]
+    a, b = lines.index(" & \\multicolumn{1}{c}{Alpha} \\\\"), lines.index(" & \\multicolumn{1}{c}{Beta} \\\\")
+    assert outer < a < sep < b and lines.count("Object & \\multicolumn{1}{c}{d4} \\\\") == 2
     assert lines.count("\\cmidrule(lr){2-2}") == 2
     # ranks over the whole row: in its own block, beta would be bold everywhere
-    assert a < lines.index("first\\_obj & \\underline{0.200} / \\textbf{70.0} \\\\") < b
-    assert b < lines.index("first\\_obj & \\textbf{0.100} / \\underline{60.0} \\\\")
-    assert b < lines.index("obj2 & \\underline{0.500} / \\textbf{80.0} \\\\")
-    assert a < lines.index("\\textit{Mean} & 0.550 / 35.7 \\\\") < b < lines.index("\\textit{Mean} & 0.200 / 85.7 \\\\")
+    assert a < lines.index("first\\_obj & \\underline{0.200} / \\textbf{70.0} \\\\") < sep
+    assert sep < lines.index("first\\_obj & \\textbf{0.100} / \\underline{60.0} \\\\")
+    assert sep < lines.index("obj2 & \\underline{0.500} / \\textbf{80.0} \\\\")
+    mean_a = lines.index("\\textit{Mean} & 0.550 / 35.7 \\\\")
+    mean_b = lines.index("\\textit{Mean} & 0.200 / 85.7 \\\\")
+    assert a < mean_a < sep < mean_b
     assert lines.count("\\textit{Reconstructed} & 2/2 \\\\") == 2
 
 
-def test_chamfer_split_aligns_each_block(tmp_path):
-    """Columns follow the widest block; a narrower block keeps its own alignment (a single-tier method centred)."""
-    spec, res = _cd_f_results(tmp_path, split=[["beta"], ["alpha"]], method_tiers={"alpha": ["d2", "d4"]})
-    tex = chamfer_table(spec, res)
-    assert "\\begin{tabular}{lrr}" in tex
-    assert "first\\_obj & \\multicolumn{1}{c}{\\textbf{0.100} / \\underline{60.0}} \\\\" in tex
-    assert "first\\_obj & 0.300 / 40.0 & \\underline{0.200} / \\textbf{70.0} \\\\" in tex
-    assert "\\cmidrule(lr){2-3}" in tex and "\\textit{Reconstructed} & \\multicolumn{1}{c}{2/2} \\\\" in tex
+def test_chamfer_centred_methods(tmp_path):
+    """`centred` lists the single-tier methods centred under their name; the others are right-aligned, their name
+    written plain (Overleaf: Meshroom centred, Neuralangelo and SuperNormal right-aligned)."""
+    spec, res = _cd_f_results(tmp_path, split=[["beta"], ["alpha"]], method_tiers={"alpha": ["d4"]},
+                              centred=["alpha"])
+    lines = chamfer_table(spec, res).splitlines()
+    beta, alpha = lines.index("\\begin{tabular}{lr}"), lines.index("\\begin{tabular}{lc}")
+    assert beta < lines.index(" & Beta \\\\") < alpha
+    assert " & \\multicolumn{1}{c}{Alpha} \\\\" in lines
 
 
 def test_chamfer_split_rejects_unknown_method():
@@ -163,3 +170,5 @@ def test_chamfer_split_rejects_unknown_method():
     with pytest.raises(ValueError):
         ChamferTable(methods=["alpha"], tiers=["d4"], fscore=0.5, split=[["alpha"], ["gamma"]],
                      caption="c", label="l", output="o")
+    with pytest.raises(ValueError):
+        ChamferTable(methods=["alpha"], tiers=["d4"], centred=["gamma"], caption="c", label="l", output="o")

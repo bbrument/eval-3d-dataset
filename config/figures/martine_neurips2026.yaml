@@ -169,6 +169,7 @@ tables:
     mean: pooled         # Mean row: the objects' point distances concatenated, as for the PRF curves
     layout: cell
     split: [[realityscan, meshroom, colmap, pgsr], [neus2, neuralangelo, rnbneus2, supernormal]]
+    centred: [meshroom]  # Overleaf layout (Robin, Baptiste, 06/11/2026): Neuralangelo, SuperNormal right-aligned
     caption: 'Chamfer distance (mm, Eq.~\ref{eq:chamfer}) / F-score at 0.5~mm (\%) per object, method and image resolution (d1 to d8: full to one-eighth resolution), with all 84 views; Meshroom at d4 only; methods in two sub-tables, one under the other. \textbf{Bold}: best per row over both sub-tables, \underline{underline}: second best, for each metric separately (lowest Chamfer distance, highest F-score). --: failure of the method (no reconstruction, Table~\ref{tab:failures}). \textit{Mean}: point distances of all objects pooled, as if they formed a single mesh, so that larger objects weigh more; a failed reconstruction keeps its ground-truth points in the pool, all missed: they lower the F-score, and lying beyond the cutoff of Eq.~\ref{eq:chamfer} they do not enter the Chamfer distance, so Chamfer means over different numbers of reconstructed objects (\textit{Reconstructed} row) are not directly comparable.'
     label: 'tab:chamfer'
     output: all_cd.tex

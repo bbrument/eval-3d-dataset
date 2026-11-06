@@ -110,6 +110,9 @@ class ChamferTable(BaseModel):
     split: Optional[list[list[str]]] = Field(
         default=None, description="Methods of each sub-table, stacked in one tabular (cell layout); bold and "
                                   "underline ranked over the whole row")
+    centred: Optional[list[str]] = Field(
+        default=None, description="Single-tier methods centred under their name (default: all); the others are "
+                                  "right-aligned")
     caption: str
     label: str
     output: str
@@ -122,6 +125,8 @@ class ChamferTable(BaseModel):
                 raise ValueError(f"split: each method once, among {self.methods}: {self.split}")
             if self.fscore is not None and self.layout == "stacked":
                 raise ValueError("split needs the cell layout")
+        if self.centred is not None and not set(self.centred) <= set(self.methods):
+            raise ValueError(f"centred: methods among {self.methods}: {self.centred}")
         return self
 
 
