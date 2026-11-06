@@ -166,6 +166,7 @@ def test_chamfer_centred_methods(tmp_path):
 
 def test_chamfer_split_rejects_unknown_method():
     import pytest
+
     from src.figures.spec import ChamferTable
     with pytest.raises(ValueError):
         ChamferTable(methods=["alpha"], tiers=["d4"], fscore=0.5, split=[["alpha"], ["gamma"]],
