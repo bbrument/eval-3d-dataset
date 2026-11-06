@@ -832,8 +832,8 @@ wheels = [
 ]
 
 [[package]]
-name = "eval-pipeline"
-version = "0.1.0"
+name = "eval-3d"
+version = "1.0.0"
 source = { editable = "." }
 dependencies = [
     { name = "click" },

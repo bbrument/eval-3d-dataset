@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 import yaml
 
-from src.config import load_config
+from eval3d.config import load_config
 
 REPO = Path(__file__).resolve().parents[1]
 

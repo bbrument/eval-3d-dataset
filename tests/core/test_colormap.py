@@ -6,7 +6,7 @@ import trimesh
 
 def test_color_mesh_by_metric_sets_vertex_colors():
     """color_mesh_by_metric should set vertex colors based on values."""
-    from src.core.colormap import color_mesh_by_metric
+    from eval3d.core.colormap import color_mesh_by_metric
 
     vertices = np.array([[0, 0, 0], [1, 0, 0], [0, 1, 0]], dtype=np.float32)
     faces = np.array([[0, 1, 2]])
@@ -25,7 +25,7 @@ def test_color_mesh_by_metric_sets_vertex_colors():
 
 def test_color_mesh_by_metric_auto_range():
     """color_mesh_by_metric should auto-compute vmin/vmax if not provided."""
-    from src.core.colormap import color_mesh_by_metric
+    from eval3d.core.colormap import color_mesh_by_metric
 
     vertices = np.array([[0, 0, 0], [1, 0, 0], [0, 1, 0]], dtype=np.float32)
     faces = np.array([[0, 1, 2]])
@@ -40,7 +40,7 @@ def test_color_mesh_by_metric_auto_range():
 
 def test_color_uniform():
     """color_uniform should apply uniform color to all vertices."""
-    from src.core.colormap import color_uniform
+    from eval3d.core.colormap import color_uniform
 
     vertices = np.array([[0, 0, 0], [1, 0, 0], [0, 1, 0]], dtype=np.float32)
     faces = np.array([[0, 1, 2]])
@@ -55,7 +55,7 @@ def test_color_uniform():
 
 def test_color_by_accuracy():
     """color_by_accuracy should return colored mesh and colorbar params."""
-    from src.core.colormap import color_by_accuracy
+    from eval3d.core.colormap import color_by_accuracy
 
     vertices = np.array([[0, 0, 0], [1, 0, 0], [0, 1, 0]], dtype=np.float32)
     faces = np.array([[0, 1, 2]])

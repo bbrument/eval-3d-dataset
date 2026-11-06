@@ -5,8 +5,8 @@ from pathlib import Path
 
 import numpy as np
 
-from src.config import Config
-from src.figures.spec import FiguresSpec
+from eval3d.config import Config
+from eval3d.figures.spec import FiguresSpec
 
 
 def make_config(tmp_path: Path, objects=("obj1", "obj2")) -> Config:

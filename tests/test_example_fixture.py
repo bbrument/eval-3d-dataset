@@ -8,7 +8,7 @@ from pathlib import Path
 import yaml
 from click.testing import CliRunner
 
-from src.cli import main
+from eval3d.cli import main
 
 REPO = Path(__file__).resolve().parents[1]
 CONFIG = REPO / "config" / "example.yaml"
@@ -16,7 +16,7 @@ FIXTURE = REPO / "tests" / "data" / "lego"
 
 
 def test_example_config_points_to_the_fixture(monkeypatch):
-    from src.config import load_config
+    from eval3d.config import load_config
 
     monkeypatch.chdir(REPO)
     config = load_config(CONFIG)

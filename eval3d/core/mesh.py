@@ -93,5 +93,5 @@ def filter_mesh_by_vertex_mask(mesh: trimesh.Trimesh, vertex_mask: np.ndarray) -
     return new_mesh
 
 
-# Vertex curvature: VCM estimator (src/core/vcm.py), importable from here as before.
+# Vertex curvature: VCM estimator (eval3d/core/vcm.py), importable from here as before.
 from .vcm import compute_vertex_curvature  # noqa: E402,F401

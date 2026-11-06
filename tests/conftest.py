@@ -15,7 +15,7 @@ def pytest_collection_modifyitems(config, items):
     gl_items = [item for item in items if "gl" in item.keywords]
     if not gl_items:
         return
-    from src.core.rendering import PYRENDER_AVAILABLE, PYRENDER_IMPORT_ERROR
+    from eval3d.core.rendering import PYRENDER_AVAILABLE, PYRENDER_IMPORT_ERROR
 
     if PYRENDER_AVAILABLE:
         return

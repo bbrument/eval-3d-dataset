@@ -5,8 +5,8 @@ import pytest
 import trimesh
 from scipy.spatial import cKDTree
 
-from src.core.proxy import curvature_proxy, refine_edges
-from src.pipeline.preprocess_gt import compute_gt_curvature
+from eval3d.core.proxy import curvature_proxy, refine_edges
+from eval3d.pipeline.preprocess_gt import compute_gt_curvature
 
 
 def _slab(x0, x1, y0, y1, z0, z1):
@@ -38,8 +38,8 @@ def test_gt_curvature_on_a_coarse_sphere_uses_the_refined_proxy():
 
 
 def test_proxy_curvature_is_computed_once_and_cached(tmp_path):
-    from src.config import Config
-    from src.pipeline.preprocess_gt import proxy_curvature
+    from eval3d.config import Config
+    from eval3d.pipeline.preprocess_gt import proxy_curvature
     gt_src = tmp_path / "src" / "obj"
     gt_src.mkdir(parents=True)
     trimesh.creation.icosphere(subdivisions=5, radius=10.0).export(gt_src / "gt.ply")  # edges ~0.37
@@ -59,8 +59,8 @@ def test_proxy_curvature_is_computed_once_and_cached(tmp_path):
 
 
 def test_tiled_curvature_matches_the_whole_mesh_run():
-    from src.core.proxy import tiled_curvature
-    from src.core.vcm import compute_vertex_curvature
+    from eval3d.core.proxy import tiled_curvature
+    from eval3d.core.vcm import compute_vertex_curvature
     m = trimesh.creation.icosphere(subdivisions=4, radius=10.0)  # edges ~0.74: refined in each tile
     whole = curvature_proxy(m, 0.3)
     k_whole = compute_vertex_curvature(whole)

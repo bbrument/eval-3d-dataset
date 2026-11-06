@@ -5,8 +5,8 @@ import numpy as np
 import pytest
 import trimesh
 
-from src.core.mesh import compute_vertex_curvature
-from src.pipeline.preprocess_gt import compute_gt_curvature
+from eval3d.core.mesh import compute_vertex_curvature
+from eval3d.pipeline.preprocess_gt import compute_gt_curvature
 
 SPHERE_RADIUS = 10.0
 

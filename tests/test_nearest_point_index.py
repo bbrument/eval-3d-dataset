@@ -11,7 +11,7 @@ import time
 import numpy as np
 from scipy.spatial import cKDTree
 
-from src.core.nearest import NearestPointIndex
+from eval3d.core.nearest import NearestPointIndex
 
 
 def _perforated_bowl(n_points: int, seed: int = 0) -> np.ndarray:

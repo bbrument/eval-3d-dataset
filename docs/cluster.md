@@ -6,7 +6,7 @@ Running the stages as SLURM jobs from the bundled templates.
 
 Set `execution.mode: "slurm"` and fill `execution.slurm.account` / `partition`. Job templates in
 `slurm/templates/` (`cleanup.sh.j2`, `eval.sh.j2`) are fully parameterised: nothing
-site-specific is baked into `src/`.
+site-specific is baked into `eval3d/`.
 
 Machine-specific runtime setup (for example a headless OSMesa library and the C++ runtime it needs
 on `LD_LIBRARY_PATH`, for `visualize`) goes in a shell script named by

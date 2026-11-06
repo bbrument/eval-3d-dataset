@@ -9,7 +9,7 @@ import trimesh
 @pytest.mark.gl
 def test_offscreen_renderer_basic():
     """OffscreenRenderer should render a simple colored mesh."""
-    from src.core.rendering import OffscreenRenderer
+    from eval3d.core.rendering import OffscreenRenderer
 
     # Create simple triangle, wound to FACE the camera (normal -Z, toward an OpenCV camera at
     # the origin looking +Z): pyrender culls back faces, so [0, 1, 2] rendered nothing.
@@ -45,7 +45,7 @@ def test_offscreen_renderer_basic():
 
 def test_add_colorbar():
     """add_colorbar should add a colorbar to an image."""
-    from src.core.rendering import add_colorbar
+    from eval3d.core.rendering import add_colorbar
 
     # Create simple 100x100 white image
     image = np.full((100, 100, 3), 255, dtype=np.uint8)
@@ -60,7 +60,7 @@ def test_add_colorbar():
 
 def test_crop_to_content():
     """crop_to_content should crop to bounding box of content."""
-    from src.core.rendering import crop_to_content
+    from eval3d.core.rendering import crop_to_content
 
     # Create 100x100 white image with small red square in center
     image = np.full((100, 100, 3), 255, dtype=np.uint8)
@@ -76,7 +76,7 @@ def test_crop_to_content():
 @pytest.mark.gl
 def test_render_views(tmp_path):
     """render_views should render multiple camera views to files."""
-    from src.core.rendering import render_views
+    from eval3d.core.rendering import render_views
 
     # Create simple mesh
     vertices = np.array([[0, 0, 1], [1, 0, 1], [0.5, 1, 1]], dtype=np.float32)

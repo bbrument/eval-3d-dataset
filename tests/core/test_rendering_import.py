@@ -1,4 +1,4 @@
-"""`src.core.rendering` must import on a machine whose GL backend is broken.
+"""`eval3d.core.rendering` must import on a machine whose GL backend is broken.
 
 PyOpenGL without a usable GL library raises `AttributeError` (not `ImportError`) while
 pyrender is imported; that used to abort pytest collection of every test importing the
@@ -21,7 +21,7 @@ class _BrokenGLFinder(importlib.abc.MetaPathFinder):
 
 @pytest.fixture
 def broken_gl(monkeypatch):
-    import src.core.rendering as rendering
+    import eval3d.core.rendering as rendering
 
     for name in [m for m in sys.modules if m == "pyrender" or m.startswith("pyrender.")]:
         monkeypatch.delitem(sys.modules, name)

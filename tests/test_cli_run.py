@@ -4,8 +4,8 @@ from pathlib import Path
 
 from click.testing import CliRunner
 
-from src.cli import main
-from src.runner.local import LocalRunner
+from eval3d.cli import main
+from eval3d.runner.local import LocalRunner
 
 CONFIG = Path(__file__).resolve().parents[1] / "config" / "martine.yaml"
 

@@ -8,8 +8,8 @@ Martine mask (9568x6376) dilates by 48px:
 
 import pytest
 
-from src.config import CleanupConfig, load_config
-from src.core.visibility import (
+from eval3d.config import CleanupConfig, load_config
+from eval3d.core.visibility import (
     AUTO_DILATION_REF_N_PIXELS,
     AUTO_DILATION_REF_PX,
     compute_auto_dilation,

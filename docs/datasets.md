@@ -7,7 +7,7 @@ The configs shipped in `config/`, one per dataset, and how to add your own.
 The pipeline was built for Martine, a millimetre-scale 84-view benchmark, and applies unchanged to any
 dataset that follows the
 [input layout](input-layout.md). Everything dataset-specific lives in a config file under
-`config/`; `src/` carries no dataset assumptions.
+`config/`; `eval3d/` carries no dataset assumptions.
 
 ## Bundled configurations
 
