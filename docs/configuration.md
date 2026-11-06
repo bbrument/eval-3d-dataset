@@ -13,7 +13,9 @@ inputs of the evaluation kit shipped under `<object>/gt/`: `paths.gt_artifacts_r
 GT `gt_pcd.npy`, `attributes/`, `challenges/`), `paths.eval_cameras` (`eval_cameras.sfm`),
 `paths.eval_masks` (`masks_eval/`) and `paths.watertight_masks` (`masks_watertight/`; hole
 culling runs only when this directory holds PNG masks). Left unset, the pipeline uses the
-workspace `Groundtruth/` and the cameras/masks found under `paths.data_root`.
+workspace `Groundtruth/` and the cameras/masks found under `paths.data_root`. These templates start with
+`{dataset_root}`, so `paths.dataset_root` (the download) and `paths.eval_root` (your workspace) are the two
+keys to set. Relative paths are resolved from the directory you run `eval-pipeline` in.
 
 Every command takes `-c/--config`; it is required.
 

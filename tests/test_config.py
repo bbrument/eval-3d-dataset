@@ -57,6 +57,31 @@ class TestPathsConfig:
         assert config.data_root == "/path/to/data"
         assert config.eval_root == "/path/to/eval"
 
+    def test_dataset_root_placeholder(self):
+        """{dataset_root} in a path template expands to paths.dataset_root."""
+        config = Config(
+            dataset=DatasetConfig(name="d", objects=["rock"]),
+            paths=PathsConfig(
+                dataset_root="/data/martine",
+                data_root="{dataset_root}/{object}/mvs/d1",
+                gt_artifacts_root="{dataset_root}/{object}/gt",
+                eval_cameras="{dataset_root}/{object}/gt/eval_cameras.sfm",
+                eval_root="/runs/{object}",
+            ),
+        )
+        assert str(config.get_gt_artifacts_dir("rock")) == "/data/martine/rock/gt"
+        assert str(config.get_cameras_path("rock")) == "/data/martine/rock/gt/eval_cameras.sfm"
+        assert str(config.get_data_root("rock")) == "/data/martine/rock/mvs/d1"
+
+    def test_dataset_root_placeholder_unset(self):
+        """A template using {dataset_root} without paths.dataset_root fails clearly."""
+        config = Config(
+            dataset=DatasetConfig(name="d", objects=["rock"]),
+            paths=PathsConfig(data_root="{dataset_root}/{object}", eval_root="/runs/{object}"),
+        )
+        with pytest.raises(ValueError, match="dataset_root"):
+            config.get_data_root("rock")
+
 
 class TestCleanupConfig:
     """Tests for CleanupConfig validation."""

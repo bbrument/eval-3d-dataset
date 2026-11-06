@@ -162,12 +162,14 @@ def evaluate(ctx, object_name, method_name, force):
 
 
 @main.command()
+@click.option("--object", "-o", "object_name", help="Object name (default: all in the config)")
+@click.option("--method", "-m", "method_name", help="Method name (default: all in the config)")
 @click.option("--workers", "-w", type=int, help="Max parallel workers")
 @click.option("--slurm", is_flag=True, help="Use SLURM instead of local execution")
 @click.option("--stages", multiple=True, default=["cleanup", "evaluate"], help="Stages to run")
 @click.pass_context
-def run(ctx, workers, slurm, stages):
-    """Run the full pipeline (cleanup + evaluate) for all objects/methods."""
+def run(ctx, object_name, method_name, workers, slurm, stages):
+    """Run the full pipeline (cleanup + evaluate) for all objects/methods, or the ones given."""
     config = ctx.obj["config"]
     config_path = ctx.obj["config_path"]
 
@@ -181,7 +183,12 @@ def run(ctx, workers, slurm, stages):
         runner = LocalRunner(config, max_workers=workers)
         runner.config_path = config_path
 
-    results = runner.run_pipeline(config, stages=stages)
+    results = runner.run_pipeline(
+        config,
+        objects=[object_name] if object_name else None,
+        methods=[method_name] if method_name else None,
+        stages=stages,
+    )
 
     n_success = sum(1 for v in results.values() if v)
     n_total = len(results)

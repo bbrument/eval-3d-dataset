@@ -35,6 +35,10 @@ class PathsConfig(BaseModel):
           If not specified, defaults to data_root (for backward compatibility)
     """
 
+    dataset_root: Optional[str] = Field(
+        default=None,
+        description="Dataset download directory; the other templates can refer to it as {dataset_root}.",
+    )
     data_root: str = Field(description="Root directory template for camera files and masks")
     eval_root: Optional[str] = Field(default=None, description="Eval directory template for GT and method results")
     gt_root: Optional[str] = Field(default=None, description="Read-only source of the RAW ground truth (gt.ply + challenges_raw/). When set, preprocess-gt/-challenges read the GT mesh and raw challenge sources from here, while all DERIVED artefacts (gt_cleaned.ply, gt_pcd.npy, attributes/, challenges/) are written under eval_root/{object}/Groundtruth/. When unset, the raw GT is read from that same Groundtruth dir (legacy behaviour). Supports {object}.")
@@ -252,7 +256,10 @@ class Config(BaseModel):
 
         # Resolve template
         source_object = self.dataset.object_aliases.get(object_name, object_name)
+        if "{dataset_root}" in template and not self.paths.dataset_root:
+            raise ValueError(f"paths.dataset_root is not set but the template uses it: {template}")
         path_str = template.format(
+            dataset_root=self.paths.dataset_root or "",
             object=object_name,
             source_object=source_object,
             normals_priors=normals_priors if normals_priors else "",
