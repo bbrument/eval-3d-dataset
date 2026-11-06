@@ -107,9 +107,22 @@ class ChamferTable(BaseModel):
     mean: Literal["objects", "pooled"] = Field(
         default="objects", description="Mean row: mean over the objects, or the objects' point distances pooled")
     sideways: bool = Field(default=False, description="sidewaystable (LaTeX package rotating), page in landscape")
+    split: Optional[list[list[str]]] = Field(
+        default=None, description="Methods of each sub-table, stacked in one tabular (cell layout); bold and "
+                                  "underline ranked over the whole row")
     caption: str
     label: str
     output: str
+
+    @model_validator(mode="after")
+    def _check_split(self):
+        if self.split is not None:
+            flat = [m for block in self.split for m in block]
+            if sorted(flat) != sorted(set(flat)) or not set(flat) <= set(self.methods):
+                raise ValueError(f"split: each method once, among {self.methods}: {self.split}")
+            if self.fscore is not None and self.layout == "stacked":
+                raise ValueError("split needs the cell layout")
+        return self
 
 
 class FailuresTable(BaseModel):
