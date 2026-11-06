@@ -5,7 +5,7 @@ whole surface, and adding your own region.
 
 [← back to README](../README.md)
 
-This pipeline evaluates **geometry**: Chamfer distance, precision/recall/F-score, coverage.
+This pipeline evaluates **geometry**: Chamfer distance, precision/recall/F-score.
 
 **Region-restricted evaluation (properties).** By supplying per-point property masks on the
 ground truth (`challenges/‹property›.npy`: lambertian, specular, …), the same metrics are
