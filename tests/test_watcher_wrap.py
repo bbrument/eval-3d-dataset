@@ -2,8 +2,8 @@
 
 from pathlib import Path
 
-from src.config import SlurmConfig
-from src.watcher.scanner import wrap_command
+from eval3d.config import SlurmConfig
+from eval3d.watcher.scanner import wrap_command
 
 
 def test_setup_script_defaults_to_none():

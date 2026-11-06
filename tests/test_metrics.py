@@ -5,7 +5,7 @@ import math
 import numpy as np
 import pytest
 
-from src.core.metrics import (
+from eval3d.core.metrics import (
     compute_chamfer,
     compute_distances,
     compute_fscore_curve,

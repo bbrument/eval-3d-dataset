@@ -1,6 +1,6 @@
 [project]
-name = "eval-pipeline"
-version = "0.1.0"
+name = "eval-3d"
+version = "1.0.0"
 description = "Evaluation pipeline for 3D reconstruction benchmark"
 requires-python = ">=3.10"
 dependencies = [
@@ -37,7 +37,7 @@ dev = [
 ]
 
 [project.scripts]
-eval-pipeline = "src.cli:main"
+eval-pipeline = "eval3d.cli:main"
 
 [tool.uv]
 # pyrender 0.1.45 pins PyOpenGL==3.1.0, whose OpenGL.osmesa lacks OSMesaCreateContextAttribs
@@ -50,7 +50,7 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["src*"]
+include = ["eval3d*"]
 
 [tool.ruff]
 line-length = 120

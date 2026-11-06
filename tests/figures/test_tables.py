@@ -1,7 +1,7 @@
 """LaTeX tables: coverage per configuration, Chamfer per object, failures."""
 
-from src.figures.cells import Results
-from src.figures.tables import chamfer_table, coverage_table, failures_table
+from eval3d.figures.cells import Results
+from eval3d.figures.tables import chamfer_table, coverage_table, failures_table
 
 from .helpers import make_cell, make_config, make_gt, make_spec
 
@@ -167,7 +167,7 @@ def test_chamfer_centred_methods(tmp_path):
 def test_chamfer_split_rejects_unknown_method():
     import pytest
 
-    from src.figures.spec import ChamferTable
+    from eval3d.figures.spec import ChamferTable
     with pytest.raises(ValueError):
         ChamferTable(methods=["alpha"], tiers=["d4"], fscore=0.5, split=[["alpha"], ["gamma"]],
                      caption="c", label="l", output="o")

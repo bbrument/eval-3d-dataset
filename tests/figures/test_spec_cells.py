@@ -5,8 +5,8 @@ from pathlib import Path
 import pytest
 from pydantic import ValidationError
 
-from src.figures.cells import Cell, Results
-from src.figures.spec import load_spec
+from eval3d.figures.cells import Cell, Results
+from eval3d.figures.spec import load_spec
 
 from .helpers import make_cell, make_config, make_spec
 

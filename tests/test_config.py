@@ -4,7 +4,7 @@
 import pytest
 import yaml
 
-from src.config import (
+from eval3d.config import (
     AggregationConfig,  # F1 Fix: Import AggregationConfig
     CleanupConfig,
     Config,

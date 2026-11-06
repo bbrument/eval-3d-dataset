@@ -12,9 +12,9 @@ from pathlib import Path
 import yaml
 from click.testing import CliRunner
 
-import src.core.rendering as rendering
-from src.cli import main
-from src.config import load_config
+import eval3d.core.rendering as rendering
+from eval3d.cli import main
+from eval3d.config import load_config
 
 
 def _write_config(tmp_path: Path) -> Path:
@@ -56,7 +56,7 @@ def test_visualize_exits_nonzero_when_pyrender_missing(tmp_path, monkeypatch):
 def test_visualize_missing_module_fails_without_locking(tmp_path, monkeypatch):
     """A dependency missing mid-run (e.g. fast_simplification for decimation) is an environment
     error: non-zero exit, but no .viz_failed lock (it would block every combo until --force)."""
-    import src.pipeline.visualize as viz
+    import eval3d.pipeline.visualize as viz
 
     def missing(*args, **kwargs):
         raise ModuleNotFoundError("No module named 'fast_simplification'")
@@ -72,7 +72,7 @@ def test_visualize_missing_module_fails_without_locking(tmp_path, monkeypatch):
 
 def test_visualize_missing_required_file_fails_and_locks(tmp_path, monkeypatch):
     """A missing required input must fail its SLURM job, not report success."""
-    import src.pipeline.visualize as viz
+    import eval3d.pipeline.visualize as viz
 
     def missing(*args, **kwargs):
         raise FileNotFoundError("required camera file missing")
@@ -94,8 +94,8 @@ def test_gt_renders_go_to_workspace_not_published_kit(tmp_path, monkeypatch):
     import numpy as np
     import trimesh
 
-    import src.pipeline.visualize as viz
-    from src.config import Config
+    import eval3d.pipeline.visualize as viz
+    from eval3d.config import Config
 
     pub_gt = tmp_path / "pub" / "obj1" / "gt"
     pub_gt.mkdir(parents=True)
@@ -133,8 +133,8 @@ def test_gt_renders_go_to_workspace_not_published_kit(tmp_path, monkeypatch):
 
 
 def test_viz_jobs_are_submitted_at_lowest_priority(tmp_path, monkeypatch):
-    from src.runner.slurm import SlurmRunner
-    from src.watcher import scanner
+    from eval3d.runner.slurm import SlurmRunner
+    from eval3d.watcher import scanner
 
     monkeypatch.setattr(SlurmRunner, "get_active_job_names", lambda self: set())
     calls = []

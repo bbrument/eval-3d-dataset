@@ -123,7 +123,7 @@ def project_to_pixels(
     """Project 3D points to the pixel that contains them.
 
     With the centre of the top-left pixel at ``pixel_centre`` (0.0 for AliceVision/OpenCV
-    cameras, see ``src.core.camera``), pixel i spans [i + c - 0.5, i + c + 0.5): a point at x
+    cameras, see ``eval3d.core.camera``), pixel i spans [i + c - 0.5, i + c + 0.5): a point at x
     lies in pixel floor(x - c + 0.5), and the image spans c - 0.5 <= x < w + c - 0.5. For
     c = 0.5 this is the lookup by truncation (pixel floor(x), 0 <= x < w).
 

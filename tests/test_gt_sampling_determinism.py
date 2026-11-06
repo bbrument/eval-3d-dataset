@@ -23,8 +23,8 @@ import inspect
 import numpy as np
 import pytest
 
-from src.config import Config, DatasetConfig, EvaluationConfig, PathsConfig
-from src.core.sampling import downsample_pcd, upsample_mesh
+from eval3d.config import Config, DatasetConfig, EvaluationConfig, PathsConfig
+from eval3d.core.sampling import downsample_pcd, upsample_mesh
 
 
 def _plane_grid(n: int = 6, spacing: float = 1.0):
@@ -101,7 +101,7 @@ class TestSamplingSeedConfig:
         """Consistency: the GT-sampling default matches the reconstruction-side default
         seed used in pipeline.evaluate (metrics['seed']=42), so GT and data clouds are
         drawn under the same seed."""
-        from src.pipeline.evaluate import evaluate
+        from eval3d.pipeline.evaluate import evaluate
 
         evaluate_seed_default = inspect.signature(evaluate).parameters["seed"].default
         assert evaluate_seed_default == 42
@@ -129,7 +129,7 @@ class TestPreprocessGtWiring:
 
     @pytest.mark.parametrize("seed", [42, 7])
     def test_preprocess_gt_forwards_config_seed(self, tmp_path, monkeypatch, seed):
-        from src.pipeline import preprocess_gt as pg
+        from eval3d.pipeline import preprocess_gt as pg
 
         config = self._make_config(tmp_path, seed)
 

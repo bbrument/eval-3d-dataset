@@ -2,8 +2,8 @@
 
 import pytest
 
-from src.figures.cells import Results
-from src.figures.radar import discover_properties, radar_values
+from eval3d.figures.cells import Results
+from eval3d.figures.radar import discover_properties, radar_values
 
 from .helpers import make_cell, make_config, make_gt, make_spec
 

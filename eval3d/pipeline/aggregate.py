@@ -13,7 +13,7 @@ from ..io.masks import list_challenge_masks
 def discover_methods(config: Config) -> list[str]:
     """List the evaluated methods on disk, for configs that leave `dataset.methods` empty.
 
-    Mirrors the watcher's selection (src/watcher/scanner.py): every `results_raw/`
+    Mirrors the watcher's selection (eval3d/watcher/scanner.py): every `results_raw/`
     under each object's eval root (outside `Groundtruth/`) names a method by its
     path relative to that root, `dataset.exclude_methods` substrings are skipped,
     and only combos with an `eval_results/metrics.json` count.

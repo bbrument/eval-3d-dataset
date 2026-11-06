@@ -5,8 +5,8 @@ import numpy as np
 import trimesh
 from PIL import Image
 
-from src.core.camera import get_camera_centers
-from src.core.visibility import check_points_in_mask, compute_visibility_count, ray_visibility_check
+from eval3d.core.camera import get_camera_centers
+from eval3d.core.visibility import check_points_in_mask, compute_visibility_count, ray_visibility_check
 
 
 def _scene(tmp_path):

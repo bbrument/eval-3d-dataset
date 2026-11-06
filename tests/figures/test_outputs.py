@@ -7,10 +7,10 @@ import pytest
 from click.testing import CliRunner
 from PIL import Image
 
-from src.cli import main
-from src.figures.cells import Results
-from src.figures.qualitative import pad_render
-from src.figures.resolution_views import series
+from eval3d.cli import main
+from eval3d.figures.cells import Results
+from eval3d.figures.qualitative import pad_render
+from eval3d.figures.resolution_views import series
 
 from .helpers import make_cell, make_config, make_gt, make_spec
 
@@ -70,7 +70,7 @@ def test_prf_figure_size_from_the_spec(tmp_path):
     """figsize (inches) is read from the spec; the default keeps the paper's 10 x 2.2 strip."""
     from PIL import Image
 
-    from src.figures import prf
+    from eval3d.figures import prf
     base = {"methods": ["alpha"], "tier": "d4", "max_threshold": 1.0, "n_thresholds": 3, "output": "prf.pdf"}
     prf.plot(make_spec(prf=base), _prf_numbers(), tmp_path)
     assert Image.open(tmp_path / "prf.png").size == (2000, 440)
@@ -82,7 +82,7 @@ def test_prf_figure_size_from_the_spec(tmp_path):
 
 def test_prf_square_root_x_axis(tmp_path, monkeypatch):
     """x_scale sqrt: tau = 1 mm at mid-width of a 0-4 mm panel, ticks from the spec; linear by default."""
-    from src.figures import prf
+    from eval3d.figures import prf
     figs = []
     monkeypatch.setattr(prf.plt, "close", figs.append)
     base = {"methods": ["alpha"], "tier": "d4", "max_threshold": 4.0, "n_thresholds": 3, "output": "prf.pdf"}
@@ -100,7 +100,7 @@ def test_prf_square_root_x_axis(tmp_path, monkeypatch):
 
 def test_prf_counts_the_gt_of_failed_objects_as_missed(tmp_path):
     """alpha reconstructs obj1 only: obj2's 2 GT points are in the pool, unreached (recall 2/4, precision 1)."""
-    from src.figures import prf
+    from eval3d.figures import prf
     config = make_config(tmp_path)
     make_gt(config, "obj1", 2)
     make_gt(config, "obj2", 2)

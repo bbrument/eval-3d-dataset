@@ -15,9 +15,9 @@ import numpy as np
 import pytest
 from PIL import Image
 
-from src.config import load_config
-from src.figures.run import run_figures
-from src.figures.spec import load_spec
+from eval3d.config import load_config
+from eval3d.figures.run import run_figures
+from eval3d.figures.spec import load_spec
 
 REF = os.environ.get("EVAL_FIGURES_REF")
 pytestmark = pytest.mark.skipif(not REF, reason="EVAL_FIGURES_REF not set (paper eval outputs not available)")

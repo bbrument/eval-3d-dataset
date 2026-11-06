@@ -3,7 +3,7 @@
 import numpy as np
 from sklearn.neighbors import NearestNeighbors  # F7 Fix: Move import to top
 
-from src.core.sampling import downsample_pcd, sample_single_tri, upsample_mesh
+from eval3d.core.sampling import downsample_pcd, sample_single_tri, upsample_mesh
 
 
 class TestSampleSingleTri:

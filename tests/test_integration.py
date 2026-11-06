@@ -4,11 +4,11 @@
 import numpy as np
 import pytest
 
-from src.core.mesh import filter_mesh_by_vertex_mask
-from src.core.metrics import compute_distances, compute_metrics
-from src.core.sampling import downsample_pcd, upsample_mesh
-from src.io.masks import load_curvature_values, load_gt_pcd, load_visibility_count
-from src.io.results import load_distances, load_metrics, save_distances, save_metrics
+from eval3d.core.mesh import filter_mesh_by_vertex_mask
+from eval3d.core.metrics import compute_distances, compute_metrics
+from eval3d.core.sampling import downsample_pcd, upsample_mesh
+from eval3d.io.masks import load_curvature_values, load_gt_pcd, load_visibility_count
+from eval3d.io.results import load_distances, load_metrics, save_distances, save_metrics
 
 
 class TestMeshUtilities:

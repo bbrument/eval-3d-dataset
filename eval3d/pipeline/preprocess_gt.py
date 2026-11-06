@@ -15,7 +15,7 @@ def compute_gt_curvature(mesh, gt_pcd: np.ndarray, radius: float | None = None, 
                          max_edge: float | None = None) -> np.ndarray:
     """Compute curvature values for GT point cloud.
 
-    VCM curvature on the vertices of the proxy of the mesh (edges refined to max_edge, src/core/proxy.py), measured
+    VCM curvature on the vertices of the proxy of the mesh (edges refined to max_edge, eval3d/core/proxy.py), measured
     tile by tile (tiled_curvature), then transferred to the nearest sampled points.
 
     Args:

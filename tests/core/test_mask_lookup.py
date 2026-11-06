@@ -14,16 +14,16 @@ import numpy as np
 import trimesh
 from PIL import Image
 
-import src.core.visibility as vis
-from src.core.camera import load_cameras, load_cameras_auto
-from src.core.visibility import (
+import eval3d.core.visibility as vis
+from eval3d.core.camera import load_cameras, load_cameras_auto
+from eval3d.core.visibility import (
     check_points_in_bounds,
     check_points_in_mask,
     compute_visibility_count,
     filter_by_issue_watertight,
     filter_by_visibility,
 )
-from src.pipeline.preprocess_challenges import _process_png
+from eval3d.pipeline.preprocess_challenges import _process_png
 
 # Pixel-centre conventions (coordinate of the centre of the top-left pixel); module attributes
 # looked up at test time.

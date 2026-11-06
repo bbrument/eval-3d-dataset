@@ -3,8 +3,8 @@
 import numpy as np
 import pytest
 
-from src.config import CleanupConfig, Config, DatasetConfig, PathsConfig
-from src.core.visibility import estimate_normal_flip, filter_by_issue_watertight
+from eval3d.config import CleanupConfig, Config, DatasetConfig, PathsConfig
+from eval3d.core.visibility import estimate_normal_flip, filter_by_issue_watertight
 
 
 def test_config_watertight_orientation_default():

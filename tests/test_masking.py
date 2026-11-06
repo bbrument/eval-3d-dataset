@@ -7,7 +7,7 @@ name on disk must not change any score.
 import numpy as np
 import pytest
 
-from src.core.masking import load_gt_exclude
+from eval3d.core.masking import load_gt_exclude
 
 N_GT = 1000
 

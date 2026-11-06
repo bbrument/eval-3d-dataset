@@ -3,7 +3,7 @@
 import numpy as np
 import pytest
 
-from src.figures.pooling import load_distances, missed_gt, pooled_fscore, prf_curves
+from eval3d.figures.pooling import load_distances, missed_gt, pooled_fscore, prf_curves
 
 from .helpers import make_cell, make_config, make_gt
 

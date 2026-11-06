@@ -9,9 +9,9 @@ from pathlib import Path
 
 import numpy as np
 
-from src.config import Config
-from src.pipeline.aggregate import aggregate_challenges
-from src.pipeline.apply_masks import apply_challenge_masks
+from eval3d.config import Config
+from eval3d.pipeline.aggregate import aggregate_challenges
+from eval3d.pipeline.apply_masks import apply_challenge_masks
 
 N_GT = 40
 N_DATA = 30

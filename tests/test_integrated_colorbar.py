@@ -1,6 +1,6 @@
 """Smoke tests for the integrated_colorbar visualization option.
 
-The colorbar rendering lives in src/core/rendering.py, whose import pulls in pyrender /
+The colorbar rendering lives in eval3d/core/rendering.py, whose import pulls in pyrender /
 OpenGL. On a headless machine without a usable GL backend that import raises at module
 load; those tests skip rather than fail (the coloring math is backend-independent and is
 exercised whenever a GL backend, e.g. PYOPENGL_PLATFORM=egl, is available).
@@ -9,7 +9,7 @@ exercised whenever a GL backend, e.g. PYOPENGL_PLATFORM=egl, is available).
 import numpy as np
 import pytest
 
-from src.config import VisualizationConfig
+from eval3d.config import VisualizationConfig
 
 
 def test_config_integrated_colorbar_default_off():
@@ -18,7 +18,7 @@ def test_config_integrated_colorbar_default_off():
 
 def _import_add_colorbar():
     try:
-        from src.core.rendering import add_colorbar
+        from eval3d.core.rendering import add_colorbar
         return add_colorbar
     except Exception as exc:  # pragma: no cover - depends on GL backend availability
         pytest.skip(f"rendering/GL backend unavailable in this environment: {exc}")
@@ -43,7 +43,7 @@ def test_add_colorbar_reserve_label_space_widens_output():
 
 def test_visualize_method_importable():
     try:
-        from src.pipeline.visualize import visualize_method  # noqa: F401
+        from eval3d.pipeline.visualize import visualize_method  # noqa: F401
     except Exception as exc:  # pragma: no cover
         pytest.skip(f"visualize import needs GL backend: {exc}")
     import inspect

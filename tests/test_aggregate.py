@@ -12,8 +12,8 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from src.config import Config
-from src.pipeline.aggregate import (
+from eval3d.config import Config
+from eval3d.pipeline.aggregate import (
     aggregate_curvature,
     aggregate_global,
     discover_methods,
